@@ -1,69 +1,73 @@
-local function _6qLr(_4vUW) return _4vUW ~= nil and type(_4vUW) == "table" end
-local function _SxWA(_ROuW) return _ROuW ~= nil and type(_ROuW) == "string" end
-local function _emvQ(_fmWK) return _SxWA(_fmWK) and #_fmWK > 0x0 end
-local _zyC1 = {}
-_zyC1.fallback = "en"
-_zyC1.language = _zyC1.fallback
-_zyC1.supportedLanguage = _zyC1.fallback
-function _zyC1:SetLanguage(_FQiT)
-    local _EVk3 = self:GetSupportedLanguage(_FQiT)
-    self.language = _FQiT or self:GetLanguage()
-    self.supportedLanguage = _EVk3
-    self.strings = self:GetStrings(_EVk3)
+local function isTable(table) return table ~= nil and type(table) == "table" end
+local function isStr(str) return str ~= nil and type(str) == "string" end
+local function isStrNotEmpty(str) return isStr(str) and #str > 0 end
+local localization = {}
+localization.fallback = "en"
+localization.language = localization.fallback
+localization.supportedLanguage = localization.fallback
+function localization:SetLanguage(language)
+    local langId = self:GetSupportedLanguage(language)
+    self.language = language or self:GetLanguage()
+    self.supportedLanguage = langId
+    self.strings = self:GetStrings(langId)
 end
 
-function _zyC1:L2S(_vSZ4)
-    local _k5ig = self["strings_" .. _vSZ4]
-    if _k5ig then _k5ig._LANGUAGE = _vSZ4 elseif self["strings_" .. self.fallback] then self["strings_" .. self.fallback]._LANGUAGE = self.fallback end
-    return _k5ig or self["strings_" .. self.fallback]
+function localization:L2S(language)
+    local langStrings = self["strings_" .. language]
+    if langStrings then
+        langStrings._LANGUAGE = language
+    elseif self["strings_" .. self.fallback] then
+        self["strings_" .. self.fallback]._LANGUAGE = self.fallback
+    end
+    return langStrings or self["strings_" .. self.fallback]
 end
 
-function _zyC1:GetLanguage() return string.lower(LanguageTranslator and LanguageTranslator.defaultlang or self.fallback) end
+function localization:GetLanguage() return string.lower(LanguageTranslator and LanguageTranslator.defaultlang or self.fallback) end
 
-function _zyC1:GetSupportedLanguage(_ZXj7)
-    local _1lxe = _ZXj7 or self:GetLanguage()
-    if _1lxe and type(_1lxe) == "string" then
-        _1lxe = string.lower(_1lxe)
-        return self.languageAliasTable[_1lxe] or self.fallback
+function localization:GetSupportedLanguage(languageName)
+    local SupportedLanguageStr = languageName or self:GetLanguage()
+    if SupportedLanguageStr and type(SupportedLanguageStr) == "string" then
+        SupportedLanguageStr = string.lower(SupportedLanguageStr)
+        return self.languageAliasTable[SupportedLanguageStr] or self.fallback
     end
     return self.fallback
 end
 
-function _zyC1:GetStrings(_9txT)
-    local _Eb1G = self:GetSupportedLanguage(_9txT)
-    local _32qb = self:L2S(_Eb1G)
-    _32qb.GetString = function(_od55, _DAAw, _xBFj)
-        _DAAw = string.lower(_DAAw)
-        return (_emvQ(_od55[_DAAw]) and _od55[_DAAw]) or (_SxWA(self.strings_en[_DAAw]) and self.strings_en[_DAAw]) or _xBFj or "N/A"
+function localization:GetStrings(languageName)
+    local langId = self:GetSupportedLanguage(languageName)
+    local langStrings = self:L2S(langId)
+    langStrings.GetString = function(strings, langKey, default)
+        langKey = string.lower(langKey)
+        return (isStrNotEmpty(strings[langKey]) and strings[langKey]) or (isStr(self.strings_en[langKey]) and self.strings_en[langKey]) or default or "N/A"
     end
-    _32qb.HasString = function(_ePUL, _pEat)
-        _pEat = string.lower(_pEat)
-        return _emvQ(_ePUL[_pEat]) or _SxWA(self.strings_en[_pEat])
+    langStrings.HasString = function(strings, langKey)
+        langKey = string.lower(langKey)
+        return isStrNotEmpty(strings[langKey]) or isStr(self.strings_en[langKey])
     end
-    _32qb.GetStrings = function(_teUl, _yAzu)
-        local _0sas = _6qLr(_teUl[_yAzu]) and _teUl[_yAzu] or {}
-        if not _0sas.GetString then _0sas.GetString = function(_Og1W, _2nEA, _VaQH) return _Og1W[_2nEA] or (_6qLr(self.strings_en[_yAzu]) and self.strings_en[_yAzu][_2nEA]) or _VaQH or "N/A" end end
-        return _0sas
+    langStrings.GetStrings = function(strings, langKey)
+        local langStrings = isTable(strings[langKey]) and strings[langKey] or {}
+        if not langStrings.GetString then langStrings.GetString = function(self, langKey, default) return self[langKey] or (isTable(self.strings_en[langKey]) and self.strings_en[langKey][langKey]) or default or "N/A" end end
+        return langStrings
     end
     if not self.strings then
-        self.language = _9txT or self:GetLanguage()
-        self.supportedLanguage = _Eb1G
-        self.strings = _32qb
+        self.language = languageName or self:GetLanguage()
+        self.supportedLanguage = langId
+        self.strings = langStrings
     end
-    return _32qb
+    return langStrings
 end
 
-function _zyC1:GetString(_XoPY, _qqrz)
+function localization:GetString(langKey, default)
     if not self.strings then self:GetStrings() end
-    return self.strings:GetString(_XoPY, _qqrz)
+    return self.strings:GetString(langKey, default)
 end
 
-function _zyC1:HasString(_26Sk)
+function localization:HasString(langKey)
     if not self.strings then self:GetStrings() end
-    return self.strings:HasString(_26Sk)
+    return self.strings:HasString(langKey)
 end
 
-_zyC1.strings_en = {
+localization.strings_en = {
     menu_title = "SHB Settings",
     menu_gstyle = "Global HB Style:",
     menu_cstyle = "Player HB Style:",
@@ -161,7 +165,7 @@ _zyC1.strings_en = {
     purple = "Purple",
     none = "None",
 }
-_zyC1.strings_chs = {
+localization.strings_chs = {
     menu_title = "简易血条设置",
     menu_gstyle = "全局血条样式:",
     menu_cstyle = "玩家血条样式:",
@@ -259,7 +263,7 @@ _zyC1.strings_chs = {
     purple = "紫",
     none = "无",
 }
-_zyC1.strings_kr = {
+localization.strings_kr = {
     menu_title = "체력바 설정",
     menu_gstyle = "전체 스타일:",
     menu_cstyle = "내 스타일:",
@@ -355,7 +359,7 @@ _zyC1.strings_kr = {
     purple = "보라",
     none = "없음"
 }
-_zyC1.languageAliasTable = {
+localization.languageAliasTable = {
     en = "en",
     english = "en",
     chs = "chs",
@@ -373,4 +377,4 @@ _zyC1.languageAliasTable = {
     kor = "kr",
     korean = "kr",
 }
-return _zyC1
+return localization

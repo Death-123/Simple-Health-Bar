@@ -1,7 +1,7 @@
-local function _iwq3() return GLOBAL.TheSim:GetGameID() == "DST" end
-local function _4BNu() return _iwq3() and GLOBAL.TheNet:GetIsClient() end
-local function _HYMM() if _iwq3() then return GLOBAL.ThePlayer else return GLOBAL.GetPlayer() end end
-local function _aWci() if _iwq3() then return GLOBAL.TheWorld else return GLOBAL.GetWorld() end end
+local function isDST() return GLOBAL.TheSim:GetGameID() == "DST" end
+local function isClient() return isDST() and GLOBAL.TheNet:GetIsClient() end
+local function getPlayer() if isDST() then return GLOBAL.ThePlayer else return GLOBAL.GetPlayer() end end
+local function getWorld() if isDST() then return GLOBAL.TheWorld else return GLOBAL.GetWorld() end end
 PrefabFiles = { "dychealthbar", }
 Assets = {}
 STRINGS = GLOBAL.STRINGS
@@ -17,612 +17,663 @@ tostring = GLOBAL.tostring
 tonumber = GLOBAL.tonumber
 require = GLOBAL.require
 TheSim = GLOBAL.TheSim
-local _gAlQ = function(_mYbz, _Buge, _eOK3, _7Iap)
+local RGBAColor = function(r, g, b, a)
     return {
-        r = _mYbz or 0x1,
-        g = _Buge or 0x1,
-        b = _eOK3 or 0x1,
-        a = _7Iap or 0x1,
-        Get = function(_c0iF) return _c0iF.r, _c0iF.g, _c0iF.b, _c0iF.a end,
-        Set = function(
-            _8H1L, _lgRB, _3r8c, _GMKu, _v1BJ)
-            _8H1L.r = _lgRB or 0x1; _8H1L.g = _3r8c or 0x1; _8H1L.b = _GMKu or 0x1; _8H1L.a = _v1BJ or 0x1;
+        r = r or 1,
+        g = g or 1,
+        b = b or 1,
+        a = a or 1,
+        Get = function(self) return self.r, self.g, self.b, self.a end,
+        Set = function(self, r, g, b, a)
+            self.r = r or 1; self.g = g or 1; self.b = b or 1; self.a = a or 1;
         end,
     }
 end
-local _uJp3 = {
-    New = _gAlQ,
-    Red = _gAlQ(0x1, 0x0, 0x0, 0x1),
-    Green = _gAlQ(0x0, 0x1, 0x0, 0x1),
-    Blue = _gAlQ(0x0, 0x0, 0x1, 0x1),
-    White = _gAlQ(0x1, 0x1, 0x1, 0x1),
-    Black = _gAlQ(0x0, 0x0, 0x0, 0x1),
-    Yellow =
-        _gAlQ(0x1, 0x1, 0x0, 0x1),
-    Magenta = _gAlQ(0x1, 0x0, 0x1, 0x1),
-    Cyan = _gAlQ(0x0, 0x1, 0x1, 0x1),
-    Gray = _gAlQ(0.5, 0.5, 0.5, 0x1),
-    Orange = _gAlQ(0x1, 0.5, 0x0, 0x1),
-    Purple = _gAlQ(0.5, 0x0, 0x1, 0x1),
-    GetColor = function(
-        _nTOC, _WXgq)
-        if _WXgq == nil then return end
-        for _sQSP, _6zou in pairs(_nTOC) do if type(_6zou) == "table" and _6zou.r then if string.lower(_sQSP) == string.lower(_WXgq) then return _6zou end end end
+local colors = {
+    New = RGBAColor,
+    Red = RGBAColor(1, 0, 0, 1),
+    Green = RGBAColor(0, 1, 0, 1),
+    Blue = RGBAColor(0, 0, 1, 1),
+    White = RGBAColor(1, 1, 1, 1),
+    Black = RGBAColor(0, 0, 0, 1),
+    Yellow = RGBAColor(1, 1, 0, 1),
+    Magenta = RGBAColor(1, 0, 1, 1),
+    Cyan = RGBAColor(0, 1, 1, 1),
+    Gray = RGBAColor(0.5, 0.5, 0.5, 1),
+    Orange = RGBAColor(1, 0.5, 0, 1),
+    Purple = RGBAColor(0.5, 0, 1, 1),
+    GetColor = function(self, key)
+        if key == nil then return end
+        for k, color in pairs(self) do
+            if type(color) == "table" and color.r then
+                if string.lower(k) == string.lower(key) then
+                    return color
+                end
+            end
+        end
     end,
 }
-local function _NPlW()
-    if not _aWci() then return end
+local function foreceUpdateHealthBar()
+    if not getWorld() then return end
     TUNING.DYC_HEALTHBAR_FORCEUPDATE = true
-    _aWci():DoTaskInTime(GLOBAL.FRAMES * 0x4, function() TUNING.DYC_HEALTHBAR_FORCEUPDATE = false end)
+    getWorld():DoTaskInTime(GLOBAL.FRAMES * 4, function() TUNING.DYC_HEALTHBAR_FORCEUPDATE = false end)
 end
 GLOBAL.SHB = {}
 GLOBAL.shb = GLOBAL.SHB
 GLOBAL.SimpleHealthBar = GLOBAL.SHB
-local _PHxu = GLOBAL.SHB
-local _7P3k = GLOBAL.SHB
-_PHxu.version = modinfo.version
-_PHxu.Color = _uJp3
-_PHxu.ShowBanner = function() end
-_PHxu.PushBanner = function() end
-_PHxu.SetColor = function(_yIkz, _r7yC, _BoPg)
-    if _yIkz and type(_yIkz) == "string" then
-        if _yIkz == "cfg" then
-            _PHxu.SetColor(TUNING.DYC_HEALTHBAR_COLOR_CFG)
+local SimpleHealthBar = GLOBAL.SHB
+SimpleHealthBar.version = modinfo.version
+SimpleHealthBar.Color = colors
+SimpleHealthBar.ShowBanner = function() end
+SimpleHealthBar.PushBanner = function() end
+SimpleHealthBar.SetColor = function(colorOrR, g, b)
+    if colorOrR and type(colorOrR) == "string" then
+        if colorOrR == "cfg" then
+            SimpleHealthBar.SetColor(TUNING.DYC_HEALTHBAR_COLOR_CFG)
             return
         end
-        local _lRUZ = string.lower(_yIkz)
-        for _45y6, _Mg6P in pairs(_uJp3) do
-            if string.lower(_45y6) == _lRUZ and type(_Mg6P) == "table" then
-                TUNING.DYC_HEALTHBAR_COLOR = _Mg6P
-                _NPlW()
+        local colorName = string.lower(colorOrR)
+        for k, color in pairs(colors) do
+            if string.lower(k) == colorName and type(color) == "table" then
+                TUNING.DYC_HEALTHBAR_COLOR = color
+                foreceUpdateHealthBar()
                 return
             end
         end
-    elseif _yIkz and _r7yC and _BoPg and type(_yIkz) == "number" and type(_r7yC) == "number" and type(_BoPg) == "number" then
-        TUNING.DYC_HEALTHBAR_COLOR = _uJp3.New(_yIkz, _r7yC, _BoPg)
-        _NPlW()
+    elseif colorOrR and g and b and type(colorOrR) == "number" and type(g) == "number" and type(b) == "number" then
+        TUNING.DYC_HEALTHBAR_COLOR = colors.New(colorOrR, g, b)
+        foreceUpdateHealthBar()
         return
     end
-    TUNING.DYC_HEALTHBAR_COLOR = _yIkz
-    _NPlW()
+    TUNING.DYC_HEALTHBAR_COLOR = colorOrR
+    foreceUpdateHealthBar()
 end
-_PHxu.setcolor = _PHxu.SetColor
-_PHxu.SETCOLOR = _PHxu.SetColor
-_PHxu.SetLength = function(_xDoP)
-    _xDoP = _xDoP or 0xa
-    if type(_xDoP) ~= "number" then if _xDoP == "cfg" then _xDoP = TUNING.DYC_HEALTHBAR_CNUM_CFG else _xDoP = 0xa end end
-    _xDoP = math.floor(_xDoP)
-    if _xDoP < 0x1 then _xDoP = 0x1 end
-    if _xDoP > 0x64 then _xDoP = 0x64 end
-    TUNING.DYC_HEALTHBAR_CNUM = _xDoP
-    _NPlW()
+SimpleHealthBar.setcolor = SimpleHealthBar.SetColor
+SimpleHealthBar.SETCOLOR = SimpleHealthBar.SetColor
+SimpleHealthBar.SetLength = function(length)
+    length = length or 10
+    if type(length) ~= "number" then if length == "cfg" then length = TUNING.DYC_HEALTHBAR_CNUM_CFG else length = 10 end end
+    length = math.floor(length)
+    if length < 1 then length = 1 end
+    if length > 100 then length = 100 end
+    TUNING.DYC_HEALTHBAR_CNUM = length
+    foreceUpdateHealthBar()
 end
-_PHxu.setlength = _PHxu.SetLength
-_PHxu.SETLENGTH = _PHxu.SetLength
-_PHxu.SetDuration = function(_vuFg)
-    _vuFg = _vuFg or 0x8
-    if type(_vuFg) ~= "number" then _vuFg = 0x8 end
-    if _vuFg < 0x4 then _vuFg = 0x4 end
-    if _vuFg > 0xf423f then _vuFg = 0xf423f end
-    TUNING.DYC_HEALTHBAR_DURATION = _vuFg
+SimpleHealthBar.setlength = SimpleHealthBar.SetLength
+SimpleHealthBar.SETLENGTH = SimpleHealthBar.SetLength
+SimpleHealthBar.SetDuration = function(duration)
+    duration = duration or 8
+    if type(duration) ~= "number" then duration = 8 end
+    if duration < 4 then duration = 4 end
+    if duration > 999999 then duration = 999999 end
+    TUNING.DYC_HEALTHBAR_DURATION = duration
 end
-_PHxu.setduration = _PHxu.SetDuration
-_PHxu.SETDURATION = _PHxu.SetDuration
-_PHxu.SetStyle = function(_352T, _Gtx8, _bW3z)
-    if _352T and _Gtx8 and type(_352T) == "string" and type(_Gtx8) == "string" then
-        TUNING.DYC_HEALTHBAR_STYLE = { c1 = _352T, c2 = _Gtx8 }
-    elseif _352T == "cfg" then
-        TUNING.DYC_HEALTHBAR_STYLE =
-            TUNING.DYC_HEALTHBAR_STYLE_CFG
+SimpleHealthBar.setduration = SimpleHealthBar.SetDuration
+SimpleHealthBar.SETDURATION = SimpleHealthBar.SetDuration
+SimpleHealthBar.SetStyle = function(styleOrC1, c2, mode)
+    if styleOrC1 and c2 and type(styleOrC1) == "string" and type(c2) == "string" then
+        TUNING.DYC_HEALTHBAR_STYLE = { c1 = styleOrC1, c2 = c2 }
+    elseif styleOrC1 == "cfg" then
+        TUNING.DYC_HEALTHBAR_STYLE = TUNING.DYC_HEALTHBAR_STYLE_CFG
     else
-        if _bW3z == "c" then
-            TUNING.DYC_HEALTHBAR_STYLE_CHAR = _352T and string.lower(_352T) or nil
-        elseif _bW3z == "b" then
-            TUNING.DYC_HEALTHBAR_STYLE_BOSS = _352T and string.lower(_352T) or nil
+        if mode == "c" then
+            TUNING.DYC_HEALTHBAR_STYLE_CHAR = styleOrC1 and string.lower(styleOrC1) or nil
+        elseif mode == "b" then
+            TUNING.DYC_HEALTHBAR_STYLE_BOSS = styleOrC1 and string.lower(styleOrC1) or nil
         else
-            TUNING.DYC_HEALTHBAR_STYLE =
-                _352T and string.lower(_352T) or "standard"
+            TUNING.DYC_HEALTHBAR_STYLE = styleOrC1 and string.lower(styleOrC1) or "standard"
         end
-        local _9fL8 = _352T and GLOBAL["SimpleHealthBar"]["lib"]["TableContains"](GLOBAL["SimpleHealthBar"][GLOBAL["SimpleHealthBar"]["ds"]("{xmkqitPJ{")], _352T)
-        if _9fL8 then GLOBAL["SimpleHealthBar"]["GetUData"](_352T, function(_XIAc) if not _XIAc then GLOBAL["SimpleHealthBar"]["SetStyle"]("standard", nil, _bW3z) end end) end
+        -- local _9fL8 = styleOrC1 and GLOBAL["SimpleHealthBar"]["lib"]["TableContains"](GLOBAL["SimpleHealthBar"][GLOBAL["SimpleHealthBar"]["ds"]("{xmkqitPJ{")], styleOrC1)
+        local isSpecial = styleOrC1 and GLOBAL["SimpleHealthBar"]["lib"]["TableContains"](GLOBAL["SimpleHealthBar"]["specialHBs"], styleOrC1)
+        if isSpecial then GLOBAL["SimpleHealthBar"]["GetUData"](styleOrC1, function(data) if not data then GLOBAL["SimpleHealthBar"]["SetStyle"]("standard", nil, mode) end end) end
     end
-    _NPlW()
-    if _PHxu.onUpdateHB then _PHxu.onUpdateHB(_352T, _Gtx8) end
+    foreceUpdateHealthBar()
+    if SimpleHealthBar.onUpdateHB then SimpleHealthBar.onUpdateHB(styleOrC1, c2) end
 end
-_PHxu.setstyle = _PHxu.SetStyle
-_PHxu.SETSTYLE = _PHxu.SetStyle
-local function _r7Ir(_MEbY, _TSgh) if _MEbY == "global" then _PHxu.SetStyle(nil, nil, "c") else _PHxu.SetStyle(_MEbY, _TSgh, "c") end end
-_PHxu.SetPos = function(_TImp)
-    if _TImp and string.lower(_TImp) == "bottom" then
-        TUNING.DYC_HEALTHBAR_POSITION = 0x0
-    elseif _TImp and string.lower(_TImp) == "overhead2" then
-        TUNING.DYC_HEALTHBAR_POSITION = 0x2
-    elseif _TImp == "cfg" then
+SimpleHealthBar.setstyle = SimpleHealthBar.SetStyle
+SimpleHealthBar.SETSTYLE = SimpleHealthBar.SetStyle
+local function setStyleC(styleOrC1, C2) if styleOrC1 == "global" then SimpleHealthBar.SetStyle(nil, nil, "c") else SimpleHealthBar.SetStyle(styleOrC1, C2, "c") end end
+SimpleHealthBar.SetPos = function(pos)
+    if pos and string.lower(pos) == "bottom" then
+        TUNING.DYC_HEALTHBAR_POSITION = 0
+    elseif pos and string.lower(pos) == "overhead2" then
+        TUNING.DYC_HEALTHBAR_POSITION = 2
+    elseif pos == "cfg" then
         TUNING.DYC_HEALTHBAR_POSITION =
             TUNING.DYC_HEALTHBAR_POSITION_CFG
     else
-        TUNING.DYC_HEALTHBAR_POSITION = 0x1
+        TUNING.DYC_HEALTHBAR_POSITION = 1
     end
-    _NPlW()
+    foreceUpdateHealthBar()
 end
-_PHxu.setpos = _PHxu.SetPos
-_PHxu.SETPOS = _PHxu.SetPos
-_PHxu.SetPosition = _PHxu.SetPos
-_PHxu.setposition = _PHxu.SetPos
-_PHxu.SETPOSITION = _PHxu.SetPos
-_PHxu.ValueOn = function()
+SimpleHealthBar.setpos = SimpleHealthBar.SetPos
+SimpleHealthBar.SETPOS = SimpleHealthBar.SetPos
+SimpleHealthBar.SetPosition = SimpleHealthBar.SetPos
+SimpleHealthBar.setposition = SimpleHealthBar.SetPos
+SimpleHealthBar.SETPOSITION = SimpleHealthBar.SetPos
+SimpleHealthBar.ValueOn = function()
     TUNING.DYC_HEALTHBAR_VALUE = true
-    _NPlW()
+    foreceUpdateHealthBar()
 end
-_PHxu.valueon = _PHxu.ValueOn
-_PHxu.VALUEON = _PHxu.ValueOn
-_PHxu.ValueOff = function()
+SimpleHealthBar.valueon = SimpleHealthBar.ValueOn
+SimpleHealthBar.VALUEON = SimpleHealthBar.ValueOn
+SimpleHealthBar.ValueOff = function()
     TUNING.DYC_HEALTHBAR_VALUE = false
-    _NPlW()
+    foreceUpdateHealthBar()
 end
-_PHxu.valueoff = _PHxu.ValueOff
-_PHxu.VALUEOFF = _PHxu.ValueOff
-_PHxu.DDOn = function() TUNING.DYC_HEALTHBAR_DDON = true end
-_PHxu.ddon = _PHxu.DDOn
-_PHxu.DDON = _PHxu.DDOn
-_PHxu.DDOff = function() TUNING.DYC_HEALTHBAR_DDON = false end
-_PHxu.ddoff = _PHxu.DDOff
-_PHxu.DDOFF = _PHxu.DDOff
-_PHxu.SetLimit = function(_ZatL)
-    _ZatL = _ZatL or 0x0
-    _ZatL = math.floor(_ZatL)
-    TUNING.DYC_HEALTHBAR_LIMIT = _ZatL
-    if TUNING.DYC_HEALTHBAR_LIMIT > 0x0 then
-        while #_PHxu.hbs > TUNING.DYC_HEALTHBAR_LIMIT do
-            local _Iz50 = _PHxu.hbs[0x1]
-            table.remove(_PHxu.hbs, 0x1)
-            _Iz50:Remove()
+SimpleHealthBar.valueoff = SimpleHealthBar.ValueOff
+SimpleHealthBar.VALUEOFF = SimpleHealthBar.ValueOff
+SimpleHealthBar.DDOn = function() TUNING.DYC_HEALTHBAR_DDON = true end
+SimpleHealthBar.ddon = SimpleHealthBar.DDOn
+SimpleHealthBar.DDON = SimpleHealthBar.DDOn
+SimpleHealthBar.DDOff = function() TUNING.DYC_HEALTHBAR_DDON = false end
+SimpleHealthBar.ddoff = SimpleHealthBar.DDOff
+SimpleHealthBar.DDOFF = SimpleHealthBar.DDOff
+SimpleHealthBar.SetLimit = function(maxNum)
+    maxNum = maxNum or 0
+    maxNum = math.floor(maxNum)
+    TUNING.DYC_HEALTHBAR_LIMIT = maxNum
+    if TUNING.DYC_HEALTHBAR_LIMIT > 0 then
+        while #SimpleHealthBar.hbs > TUNING.DYC_HEALTHBAR_LIMIT do
+            local hb = SimpleHealthBar.hbs[1]
+            table.remove(SimpleHealthBar.hbs, 1)
+            hb:Remove()
         end
     end
 end
-_PHxu.setlimit = _PHxu.SetLimit
-_PHxu.SETLIMIT = _PHxu.SetLimit
-_PHxu.SetOpacity = function(_nHQr)
-    _nHQr = _nHQr or 0x1
-    _nHQr = math.max(0.1, math.min(_nHQr, 0x1))
-    TUNING.DYC_HEALTHBAR_OPACITY = _nHQr
-    if _PHxu.onUpdateHB then _PHxu.onUpdateHB(str, str2) end
+SimpleHealthBar.setlimit = SimpleHealthBar.SetLimit
+SimpleHealthBar.SETLIMIT = SimpleHealthBar.SetLimit
+SimpleHealthBar.SetOpacity = function(opacity)
+    opacity = opacity or 1
+    opacity = math.max(0.1, math.min(opacity, 1))
+    TUNING.DYC_HEALTHBAR_OPACITY = opacity
+    if SimpleHealthBar.onUpdateHB then SimpleHealthBar.onUpdateHB(str, str2) end
 end
-_PHxu.setopacity = _PHxu.SetOpacity
-_PHxu.SETOPACITY = _PHxu.SetOpacity
-_PHxu.ToggleAnimation = function(_2q2X) TUNING.DYC_HEALTHBAR_ANIMATION = _2q2X and true or false end
-_PHxu.toggleanimation = _PHxu.ToggleAnimation
-_PHxu.TOGGLEANIMATION = _PHxu.ToggleAnimation
-_PHxu.ToggleWallHB = function(_4DZ5) TUNING.DYC_HEALTHBAR_WALLHB = _4DZ5 and true or false end
-_PHxu.togglewallhb = _PHxu.ToggleWallHB
-_PHxu.TOGGLEWALLHB = _PHxu.ToggleWallHB
-_PHxu.SetThickness = function(_xLhb)
-    _xLhb = _xLhb ~= nil and type(_xLhb) == "number" and _xLhb or 1.0
-    TUNING.DYC_HEALTHBAR_THICKNESS = _xLhb
-    if _xLhb > 0x2 then TUNING.DYC_HEALTHBAR_FIXEDTHICKNESS = true else TUNING.DYC_HEALTHBAR_FIXEDTHICKNESS = false end
+SimpleHealthBar.setopacity = SimpleHealthBar.SetOpacity
+SimpleHealthBar.SETOPACITY = SimpleHealthBar.SetOpacity
+SimpleHealthBar.ToggleAnimation = function(enable) TUNING.DYC_HEALTHBAR_ANIMATION = enable and true or false end
+SimpleHealthBar.toggleanimation = SimpleHealthBar.ToggleAnimation
+SimpleHealthBar.TOGGLEANIMATION = SimpleHealthBar.ToggleAnimation
+SimpleHealthBar.ToggleWallHB = function(enable) TUNING.DYC_HEALTHBAR_WALLHB = enable and true or false end
+SimpleHealthBar.togglewallhb = SimpleHealthBar.ToggleWallHB
+SimpleHealthBar.TOGGLEWALLHB = SimpleHealthBar.ToggleWallHB
+SimpleHealthBar.SetThickness = function(thickness)
+    thickness = thickness ~= nil and type(thickness) == "number" and thickness or 1.0
+    TUNING.DYC_HEALTHBAR_THICKNESS = thickness
+    if thickness > 2 then TUNING.DYC_HEALTHBAR_FIXEDTHICKNESS = true else TUNING.DYC_HEALTHBAR_FIXEDTHICKNESS = false end
 end
-_PHxu.setthickness = _PHxu.SetThickness
-_PHxu.SETTHICKNESS = _PHxu.SetThickness
+SimpleHealthBar.setthickness = SimpleHealthBar.SetThickness
+SimpleHealthBar.SETTHICKNESS = SimpleHealthBar.SetThickness
 TUNING.DYC_HEALTHBAR_STYLE = GetModConfigData("hbstyle") or "standard"
 TUNING.DYC_HEALTHBAR_STYLE_CFG = TUNING.DYC_HEALTHBAR_STYLE
-TUNING.DYC_HEALTHBAR_CNUM = GetModConfigData("hblength") or 0xa
+TUNING.DYC_HEALTHBAR_CNUM = GetModConfigData("hblength") or 10
 TUNING.DYC_HEALTHBAR_CNUM_CFG = TUNING.DYC_HEALTHBAR_CNUM
-TUNING.DYC_HEALTHBAR_DURATION = 0x8
+TUNING.DYC_HEALTHBAR_DURATION = 8
 TUNING.DYC_HEALTHBAR_POSITION = GetModConfigData("hbpos") or "overhead"
 TUNING.DYC_HEALTHBAR_POSITION_CFG = TUNING.DYC_HEALTHBAR_POSITION
 TUNING.DYC_HEALTHBAR_VALUE = GetModConfigData("value") or (GetModConfigData("value") == nil and true)
 TUNING.DYC_HEALTHBAR_VALUE_CFG = TUNING.DYC_HEALTHBAR_VALUE
-local _rJos = GetModConfigData("hbcolor")
-TUNING.DYC_HEALTHBAR_COLOR_CFG = _rJos
-_PHxu.SetColor(_rJos)
+local hbcolor = GetModConfigData("hbcolor")
+TUNING.DYC_HEALTHBAR_COLOR_CFG = hbcolor
+SimpleHealthBar.SetColor(hbcolor)
 TUNING.DYC_HEALTHBAR_DDON = GetModConfigData("ddon") or (GetModConfigData("ddon") == nil and true)
 TUNING.DYC_HEALTHBAR_DDON_CFG = TUNING.DYC_HEALTHBAR_DDON
 TUNING.DYC_HEALTHBAR_DDDURATION = 0.65
-TUNING.DYC_HEALTHBAR_DDSIZE1 = 0x14
-TUNING.DYC_HEALTHBAR_DDSIZE2 = 0x32
+TUNING.DYC_HEALTHBAR_DDSIZE1 = 20
+TUNING.DYC_HEALTHBAR_DDSIZE2 = 50
 TUNING.DYC_HEALTHBAR_DDTHRESHOLD = 0.1
-TUNING.DYC_HEALTHBAR_MAXDIST = 0x23
-TUNING.DYC_HEALTHBAR_LIMIT = 0x0
+TUNING.DYC_HEALTHBAR_MAXDIST = 35
+TUNING.DYC_HEALTHBAR_LIMIT = 0
 TUNING.DYC_HEALTHBAR_WALLHB = true
-_PHxu.hbs = {}
-local _PWPA = function(_2wiX, _oZE1, _cRde, _YU6D)
-    _oZE1 = _oZE1 or 0x8
-    local _0tnp, MI = _YU6D and 0xff or 0x7e, _YU6D and 0x0 or 0x21
-    local _Tq1o = ""
-    local _2ru8 = function(_kMlB, _1pzF, _heIe)
-        if _heIe or (_kMlB ~= 0x9 and _kMlB ~= 0xa and _kMlB ~= 0xd and _kMlB ~= 0x20) then
-            _kMlB = _kMlB + _1pzF
-            while _kMlB > _0tnp do _kMlB = _kMlB - (_0tnp - MI + 0x1) end
-            while _kMlB < MI do _kMlB = _kMlB + (_0tnp - MI + 0x1) end
+SimpleHealthBar.hbs = {}
+local decode = function(str, offset, interval, flag)
+    offset = offset or 8
+    local num1, num2 = flag and 255 or 126, flag and 0 or 33
+    local decodeStr = ""
+    local encodeChar = function(char, offset, flag)
+        if flag or (char ~= 9 and char ~= 10 and char ~= 13 and char ~= 32) then
+            char = char + offset
+            while char > num1 do char = char - (num1 - num2 + 1) end
+            while char < num2 do char = char + (num1 - num2 + 1) end
         end
-        return _kMlB
+        return char
     end
-    for _873Q = 0x1, #_2wiX do
-        local _HcnH = string.byte(string.sub(_2wiX, _873Q, _873Q))
-        if _cRde and _cRde > 0x1 and _873Q % _cRde == 0x0 then _HcnH = _2ru8(_HcnH, _oZE1, _YU6D) else _HcnH = _2ru8(_HcnH, -_oZE1, _YU6D) end
-        _Tq1o = _Tq1o .. string.char(_HcnH)
+    for i = 1, #str do
+        local char = string.byte(string.sub(str, i, i))
+        if interval and interval > 1 and i % interval == 0 then
+            char = encodeChar(char, offset, flag)
+        else
+            char = encodeChar(char, -offset, flag)
+        end
+        decodeStr = decodeStr .. string.char(char)
     end
-    return _Tq1o
+    return decodeStr
 end
-_PHxu.ds = _PWPA
-local _NVCv = function(_JzQL)
-    local _E447 = GLOBAL[_PWPA("qw")][_PWPA("wxmv")]
-    local _EFRz, err = _E447(_JzQL, "r")
+SimpleHealthBar.ds = decode
+local readFile = function(path)
+    -- local _E447 = GLOBAL[decode("qw")][decode("wxmv")]
+    local open = GLOBAL["io"]["open"]
+    local file, err = open(path, "r")
     if err then else
-        local _FMnI = _EFRz:read("*all")
-        _EFRz:close()
-        return _FMnI
+        local content = file:read("*all")
+        file:close()
+        return content
     end
     return ""
 end
-local _vAwV = function(_VirW)
-    local _xlQ0 = "../mods/" .. modname .. "/"
-    local _eXvz = GLOBAL[_PWPA("stmqtwilt}i")](_xlQ0 .. _VirW)
-    if _eXvz ~= nil and type(_eXvz) == "function" then
-        return _eXvz
-    elseif _eXvz ~= nil and type(_eXvz) == "string" then
-        local _jZ1B = _PWPA(_NVCv(_xlQ0 .. _VirW), 0xb, 0x3)
-        return GLOBAL.loadstring(_jZ1B)
+local loadModFile = function(path)
+    local modRoot = "../mods/" .. modname .. "/"
+    -- local _eXvz = GLOBAL[decode("stmqtwilt}i")](modRoot .. _VirW)
+    local fn = GLOBAL["kleiloadlua"](modRoot .. path)
+    if fn ~= nil and type(fn) == "function" then
+        return fn
+    elseif fn ~= nil and type(fn) == "string" then
+        -- local _jZ1B = decode(_NVCv(modRoot .. _VirW), 11, 3)
+        local luaStringDecoded = decode(readFile(modRoot .. path), 11, 3)
+        return GLOBAL.loadstring(luaStringDecoded)
     else
         return nil
     end
 end
-local function _JXbm(_kLKD, _pDk4)
-    local _YPln = _vAwV(_kLKD)
-    if _YPln then
-        if _pDk4 then setfenv(_YPln, _pDk4) end
-        return _YPln(), _kLKD .. " is loaded."
+local function loadFile(path, env)
+    local fn = loadModFile(path)
+    if fn then
+        if env then setfenv(fn, env) end
+        return fn(), path .. " is loaded."
     else
-        return nil, "Error loading " .. _kLKD .. "!"
+        return nil, "Error loading " .. path .. "!"
     end
 end
-_PHxu.lf = _JXbm
-local _yRKA = GLOBAL["TheSim"][_PWPA("Om|]{mzQL")](GLOBAL["TheSim"])
-_PHxu[_PWPA("}ql")] = _yRKA
-_PHxu[_PWPA("tqj")] = _JXbm(_PWPA("{kzqx|{7l#kuq{k6t}i"))
-_PHxu[_PWPA("twkitq$i|qwv")] = _JXbm(_PWPA("twkitq$i|qwv6t}i"))
-_PHxu[_PWPA("OPJ")] = _JXbm(_PWPA("{kzqx|{7l#kopj6t}i"))
-_PHxu[_PWPA("twkitLi|i")] = _PHxu["lib"][_PWPA("TwkitLi|i")]()
-_PHxu[_PWPA("twkitLi|i")]:SetName("SimpleHealthBar")
-_PHxu[_PWPA("o}q{")] = _JXbm(_PWPA("{kzqx|{7l#ko}q{6t}i"))
-local _i4ot = _PHxu.lib.StrSpl
-local function _ne2R()
-    local _krqP = _PHxu["localData"]
-    local _UW9H = _PHxu.menu
-    _krqP:GetString("gstyle", function(_yjKk) _UW9H.gStyleSpinner:SetSelected(_yjKk, "standard") end)
-    _krqP:GetString("bstyle", function(_IXG3) _UW9H.bStyleSpinner:SetSelected(_IXG3, "global") end)
-    _krqP:GetString("cstyle", function(_aWbz) _UW9H.cStyleSpinner:SetSelected(_aWbz, "global") end)
-    _krqP:GetString("value", function(_LiaC) _UW9H.valueSpinner:SetSelected(_LiaC, "true") end)
-    _krqP:GetString("length", function(_pBsO) if _pBsO == "cfg" then _UW9H.lengthSpinner:SetSelected(_pBsO, 0xa) else _UW9H.lengthSpinner:SetSelected(_pBsO ~= nil and tonumber(_pBsO), 0xa) end end)
-    _krqP:GetString("thickness", function(_IR8g) _UW9H.thicknessSpinner:SetSelected(_IR8g ~= nil and tonumber(_IR8g), 0x16) end)
-    _krqP:GetString("pos", function(_S2t8) _UW9H.posSpinner:SetSelected(_S2t8, "overhead2") end)
-    _krqP:GetString("color", function(_nEjc) _UW9H.colorSpinner:SetSelected(_nEjc, "dynamic2") end)
-    _krqP:GetString("opacity", function(_POYo) _UW9H.opacitySpinner:SetSelected(_POYo ~= nil and tonumber(_POYo), 0.8) end)
-    _krqP:GetString("dd", function(_gA2v) _UW9H.ddSpinner:SetSelected(_gA2v, "true") end)
-    _krqP:GetString("limit", function(_xusB) _UW9H.limitSpinner:SetSelected(_xusB ~= nil and tonumber(_xusB), 0x0) end)
-    _krqP:GetString("anim", function(_cDgb) _UW9H.animSpinner:SetSelected(_cDgb, "true") end)
-    _krqP:GetString("wallhb", function(_qXAt) _UW9H.wallhbSpinner:SetSelected(_qXAt, "false") end)
-    _krqP:GetString("hotkey", function(_Du9Q) _UW9H.hotkeySpinner:SetSelected(_Du9Q, "KEY_H") end)
-    _krqP:GetString("icon", function(_lEBP) _UW9H.iconSpinner:SetSelected(_lEBP, "true") end)
+SimpleHealthBar.lf = loadFile
+-- local _yRKA = GLOBAL["TheSim"][decode("Om|]{mzQL")](GLOBAL["TheSim"])
+local userId = GLOBAL["TheSim"]["GetUserID"](GLOBAL["TheSim"])
+-- SimpleHealthBar[decode("}ql")] = userId
+SimpleHealthBar["uid"] = userId
+-- SimpleHealthBar[decode("tqj")] = lf(decode("{kzqx|{7l#kuq{k6t}i"))
+SimpleHealthBar["lib"] = loadFile("scripts/dycmisc.lua")
+-- SimpleHealthBar[decode("twkitq$i|qwv")] = loadFile(decode("twkitq$i|qwv6t}i"))
+SimpleHealthBar["localization"] = loadFile("localization.lua")
+-- SimpleHealthBar[decode("OPJ")] = loadFile(decode("{kzqx|{7l#kopj6t}i"))
+SimpleHealthBar["GHB"] = loadFile("scripts/dycghb.lua")
+-- SimpleHealthBar[decode("twkitLi|i")] = SimpleHealthBar["lib"][decode("TwkitLi|i")]()
+SimpleHealthBar["localData"] = SimpleHealthBar["lib"]["LocalData"]()
+-- SimpleHealthBar[decode("twkitLi|i")]:SetName("SimpleHealthBar")
+SimpleHealthBar["localData"]:SetName("SimpleHealthBar")
+-- SimpleHealthBar[decode("o}q{")] = loadFile(decode("{kzqx|{7l#ko}q{6t}i"))
+SimpleHealthBar["guis"] = loadFile("scripts/dycguis.lua")
+local StrSpl = SimpleHealthBar.lib.StrSpl
+local function loadLocalData()
+    local localData = SimpleHealthBar["localData"]
+    local menu = SimpleHealthBar.menu
+    localData:GetString("gstyle", function(data) menu.gStyleSpinner:SetSelected(data, "standard") end)
+    localData:GetString("bstyle", function(data) menu.bStyleSpinner:SetSelected(data, "global") end)
+    localData:GetString("cstyle", function(data) menu.cStyleSpinner:SetSelected(data, "global") end)
+    localData:GetString("value", function(data) menu.valueSpinner:SetSelected(data, "true") end)
+    localData:GetString("length", function(data) if data == "cfg" then menu.lengthSpinner:SetSelected(data, 10) else menu.lengthSpinner:SetSelected(data ~= nil and tonumber(data), 10) end end)
+    localData:GetString("thickness", function(data) menu.thicknessSpinner:SetSelected(data ~= nil and tonumber(data), 0x16) end)
+    localData:GetString("pos", function(data) menu.posSpinner:SetSelected(data, "overhead2") end)
+    localData:GetString("color", function(data) menu.colorSpinner:SetSelected(data, "dynamic2") end)
+    localData:GetString("opacity", function(data) menu.opacitySpinner:SetSelected(data ~= nil and tonumber(data), 0.8) end)
+    localData:GetString("dd", function(data) menu.ddSpinner:SetSelected(data, "true") end)
+    localData:GetString("limit", function(data) menu.limitSpinner:SetSelected(data ~= nil and tonumber(data), 0) end)
+    localData:GetString("anim", function(data) menu.animSpinner:SetSelected(data, "true") end)
+    localData:GetString("wallhb", function(data) menu.wallhbSpinner:SetSelected(data, "false") end)
+    localData:GetString("hotkey", function(data) menu.hotkeySpinner:SetSelected(data, "KEY_H") end)
+    localData:GetString("icon", function(data) menu.iconSpinner:SetSelected(data, "true") end)
 end
-local function _EIQG(_N8T7)
-    local _uWvZ = _PHxu["localData"]
-    _uWvZ:SetString("gstyle", _N8T7.gstyle)
-    _uWvZ:SetString("bstyle", _N8T7.bstyle)
-    _uWvZ:SetString("cstyle", _N8T7.cstyle)
-    _uWvZ:SetString("value", _N8T7.value)
-    _uWvZ:SetString("length", tostring(_N8T7.length))
-    _uWvZ:SetString("thickness", tostring(_N8T7.thickness))
-    _uWvZ:SetString("pos", _N8T7.pos)
-    _uWvZ:SetString("color", _N8T7.color)
-    _uWvZ:SetString("opacity", tostring(_N8T7.opacity))
-    _uWvZ:SetString("dd", _N8T7.dd)
-    _uWvZ:SetString("limit", tostring(_N8T7.limit))
-    _uWvZ:SetString("anim", _N8T7.anim)
-    _uWvZ:SetString("wallhb", _N8T7.wallhb)
-    _uWvZ:SetString("hotkey", _N8T7.hotkey)
-    _uWvZ:SetString("icon", _N8T7.icon)
+local function setLocalData(data)
+    local localData = SimpleHealthBar["localData"]
+    localData:SetString("gstyle", data.gstyle)
+    localData:SetString("bstyle", data.bstyle)
+    localData:SetString("cstyle", data.cstyle)
+    localData:SetString("value", data.value)
+    localData:SetString("length", tostring(data.length))
+    localData:SetString("thickness", tostring(data.thickness))
+    localData:SetString("pos", data.pos)
+    localData:SetString("color", data.color)
+    localData:SetString("opacity", tostring(data.opacity))
+    localData:SetString("dd", data.dd)
+    localData:SetString("limit", tostring(data.limit))
+    localData:SetString("anim", data.anim)
+    localData:SetString("wallhb", data.wallhb)
+    localData:SetString("hotkey", data.hotkey)
+    localData:SetString("icon", data.icon)
 end
-local function _I7ro()
-    local _zHdp = _PHxu.menu
-    _zHdp.gStyleSpinner:SetSelected("standard")
-    _zHdp.bStyleSpinner:SetSelected("global")
-    _zHdp.cStyleSpinner:SetSelected("global")
-    _zHdp.valueSpinner:SetSelected("true")
-    _zHdp.lengthSpinner:SetSelected(0xa)
-    _zHdp.thicknessSpinner:SetSelected(0x16)
-    _zHdp.posSpinner:SetSelected("overhead2")
-    _zHdp.colorSpinner:SetSelected("dynamic2")
-    _zHdp.opacitySpinner:SetSelected(0.8)
-    _zHdp.ddSpinner:SetSelected("true")
-    _zHdp.limitSpinner:SetSelected(0x0)
-    _zHdp.animSpinner:SetSelected("true")
-    _zHdp.wallhbSpinner:SetSelected("false")
-    _zHdp.hotkeySpinner:SetSelected("KEY_H")
-    _zHdp.iconSpinner:SetSelected("true")
-    _zHdp:DoApply()
+local function Reset()
+    local menu = SimpleHealthBar.menu
+    menu.gStyleSpinner:SetSelected("standard")
+    menu.bStyleSpinner:SetSelected("global")
+    menu.cStyleSpinner:SetSelected("global")
+    menu.valueSpinner:SetSelected("true")
+    menu.lengthSpinner:SetSelected(10)
+    menu.thicknessSpinner:SetSelected(0x16)
+    menu.posSpinner:SetSelected("overhead2")
+    menu.colorSpinner:SetSelected("dynamic2")
+    menu.opacitySpinner:SetSelected(0.8)
+    menu.ddSpinner:SetSelected("true")
+    menu.limitSpinner:SetSelected(0)
+    menu.animSpinner:SetSelected("true")
+    menu.wallhbSpinner:SetSelected("false")
+    menu.hotkeySpinner:SetSelected("KEY_H")
+    menu.iconSpinner:SetSelected("true")
+    menu:DoApply()
 end
-_PHxu.Reset = _I7ro
-_PHxu.reset = _I7ro
-_PHxu.RESET = _I7ro
-_PHxu.SetLanguage = function(_VrRz)
-    _PHxu.localization:SetLanguage(_VrRz)
-    _PHxu.menu:RefreshPage()
-    _ne2R()
-    print("Language has been set to " .. _PHxu.localization.supportedLanguage)
+SimpleHealthBar.Reset = Reset
+SimpleHealthBar.reset = Reset
+SimpleHealthBar.RESET = Reset
+SimpleHealthBar.SetLanguage = function(language)
+    SimpleHealthBar.localization:SetLanguage(language)
+    SimpleHealthBar.menu:RefreshPage()
+    loadLocalData()
+    print("Language has been set to " .. SimpleHealthBar.localization.supportedLanguage)
 end
-_PHxu.setlanguage = _PHxu.SetLanguage
-_PHxu.SETLANGUAGE = _PHxu.SetLanguage
-_PHxu.sl = _PHxu.SetLanguage
-local _eZIv = "\121\105\121\117"
-local _OhdM = "\231\191\188\232\175\173"
-local _8m1Z = { "642704851", "701574438", "834039799", "845740921", "1088165487", "1161719409", "1546144229", "1559975778", "1626938843", "1656314475", "1656333678", "1883082987", "2199037549203167410",
-    "2199037549203167802", "2199037549203167776", "2199037549203167775", "2199037549203168585", }
-local _OWYe = function(_TjRE)
-    if _TjRE and (string.find(string.lower(_TjRE), _eZIv, 0x1, true) or string.find(string.lower(_TjRE), _OhdM, 0x1, true)) then return true end
-    for _BKVG, _dUrO in pairs(_8m1Z) do if _TjRE and _TjRE == "workshop-" .. _dUrO then return true end end
+SimpleHealthBar.setlanguage = SimpleHealthBar.SetLanguage
+SimpleHealthBar.SETLANGUAGE = SimpleHealthBar.SetLanguage
+SimpleHealthBar.sl = SimpleHealthBar.SetLanguage
+local yiyu1 = "\121\105\121\117"
+local yiyu2 = "\231\191\188\232\175\173"
+local banlist = {
+    "642704851",
+    "701574438",
+    "834039799",
+    "845740921",
+    "1088165487",
+    "1161719409",
+    "1546144229",
+    "1559975778",
+    "1626938843",
+    "1656314475",
+    "1656333678",
+    "1883082987",
+    "2199037549203167410",
+    "2199037549203167802",
+    "2199037549203167776",
+    "2199037549203167775",
+    "2199037549203168585",
+}
+local isBaned = function(name)
+    if name and (string.find(string.lower(name), yiyu1, 1, true) or string.find(string.lower(name), yiyu2, 1, true)) then return true end
+    for _, id in pairs(banlist) do if name and name == "workshop-" .. id then return true end end
     return false
 end
-local _Am4m = { "1883724202", }
-local function _0qBX(_zysm)
-    local _ST1v = _OWYe(_zysm)
-    local _fBKM = false
-    for _T9FL, _Kn7D in pairs(_Am4m) do
-        if _zysm and _zysm == "workshop-" .. _Kn7D then
-            _fBKM = true
+local banlist2 = { "1883724202", }
+local function isBaned2(name)
+    local baned = isBaned(name)
+    local flag = false
+    for _, id in pairs(banlist2) do
+        if name and name == "workshop-" .. id then
+            flag = true
             break
         end
     end
-    return _ST1v or _fBKM
+    return baned or flag
 end
-local _dcs3 = function()
-    local _ZzlV = ""
-    for _sO9x, _uaOv in pairs(GLOBAL.KnownModIndex.savedata.known_mods) do
-        if _uaOv.enabled and (_0qBX(_sO9x) or (_uaOv.modinfo and _uaOv.modinfo.author and _0qBX(_uaOv.modinfo.author))) then
-            _ZzlV = #
-                _ZzlV > 0x0 and _ZzlV .. "," .. _sO9x or _sO9x
+local checkBanMod = function()
+    local banedNames = ""
+    for name, mod in pairs(GLOBAL.KnownModIndex.savedata.known_mods) do
+        if mod.enabled and (isBaned2(name) or (mod.modinfo and mod.modinfo.author and isBaned2(mod.modinfo.author))) then
+            banedNames = #banedNames > 0 and banedNames .. "," .. name or name
         end
     end
-    if #_ZzlV > 0x0 then
-        GLOBAL.error("The game is incompatible with following mod(s):\n" .. _ZzlV)
-        GLOBAL.assert(nil, "The game is incompatible with following mod(s):\n" .. _ZzlV)
-        print("‘]]" + 0x4)
-        local _1EVS = GLOBAL.error
-        GLOBAL.error(_ZzlV)
+    if #banedNames > 0 then
+        GLOBAL.error("The game is incompatible with following mod(s):\n" .. banedNames)
+        GLOBAL.assert(nil, "The game is incompatible with following mod(s):\n" .. banedNames)
+        print("‘]]" + 4)
+        local err = GLOBAL.error
+        GLOBAL.error(banedNames)
         GLOBAL.error("" .. math.random())
         GLOBAL.assert(nil)
-        _1EVS(list)
+        err(list)
         local _TAAL = math.max + {}
-        _1EVS(ent)
+        err(ent)
         AddPrefabPostInit = zzz
         AddPrefabPostInitAny = qqq
-        _7P3k = 0x309
+        SimpleHealthBar = 0x309
         SuperWall = fff
     end
 end
-local function _kO5B(_RsMM)
-    _RsMM:DoPeriodicTask(FRAMES,
+local function run(world)
+    world:DoPeriodicTask(FRAMES,
         function()
-            local _s8Tx = _HYMM()
-            if not _s8Tx then return end
-            if _RsMM.DYCSHBPlayerHud == _s8Tx.HUD or _s8Tx.HUD == nil then return else _RsMM.DYCSHBPlayerHud = _s8Tx.HUD end
-            _dcs3(0x1bc)
-            local _gyxt = _PHxu["localData"]
-            local _IfdB = _PHxu.localization:GetStrings()
-            local _CmsS = _PHxu.guis.Root
-            local _ukUf = _s8Tx.HUD.root:AddChild(_CmsS({ keepTop = true, }))
-            _s8Tx.HUD.dycSHBRoot = _ukUf
-            _PHxu["ShowMessage"] = function(_BpTN, _LQTk, _ETe9, _cwew, _qqoD, _hBjO, _x9i8, _wmgH, _IGkc)
-                _PHxu.guis["MessageBox"]["ShowMessage"](_BpTN, _LQTk, _ukUf, _IfdB, _ETe9, _cwew, _qqoD, _hBjO,
-                    _x9i8, _wmgH, _IGkc)
+            local player = getPlayer()
+            if not player then return end
+            if world.DYCSHBPlayerHud == player.HUD or player.HUD == nil then return else world.DYCSHBPlayerHud = player.HUD end
+            checkBanMod(444)
+            local localData = SimpleHealthBar["localData"]
+            local langStrings = SimpleHealthBar.localization:GetStrings()
+            local Root = SimpleHealthBar.guis.Root
+            local dycSHBRoot = player.HUD.root:AddChild(Root({ keepTop = true, }))
+            player.HUD.dycSHBRoot = dycSHBRoot
+            SimpleHealthBar["ShowMessage"] = function(message, title, callback, fontSize, animateWidth, animateHeight, width, height, ifAnimateIn)
+                SimpleHealthBar.guis["MessageBox"]["ShowMessage"](message, title, dycSHBRoot, langStrings, callback, fontSize, animateWidth, animateHeight, width, height, ifAnimateIn)
             end
-            local _ofVz = _PHxu.guis.CfgMenu
-            local _OmZY = _ukUf:AddChild(_ofVz({
-                localization = _PHxu.localization,
-                strings = _IfdB,
-                GHB = _PHxu.GHB,
-                GetHBStyle = _PHxu.GetHBStyle,
-                GetEntHBColor = _PHxu.GetEntHBColor,
-                ["ShowMessage"] =
-                    _PHxu["ShowMessage"]
+            local CfgMenu = SimpleHealthBar.guis.CfgMenu
+            local menu = dycSHBRoot:AddChild(CfgMenu({
+                localization = SimpleHealthBar.localization,
+                strings = langStrings,
+                GHB = SimpleHealthBar.GHB,
+                GetHBStyle = SimpleHealthBar.GetHBStyle,
+                GetEntHBColor = SimpleHealthBar.GetEntHBColor,
+                ["ShowMessage"] = SimpleHealthBar["ShowMessage"]
             }))
-            _PHxu.menu = _OmZY
-            _OmZY:Hide()
-            _ne2R()
-            _OmZY.applyFn = function(_adyf, _h5Bd)
-                _IfdB = _PHxu.localization.strings
-                _PHxu.SetStyle(_h5Bd.gstyle)
-                _PHxu.SetStyle(_h5Bd.bstyle ~= "global" and _h5Bd.bstyle, nil, "b")
-                _r7Ir(_h5Bd.cstyle)
-                if _h5Bd.value == "cfg" then if TUNING.DYC_HEALTHBAR_VALUE_CFG then _PHxu.ValueOn() else _PHxu.ValueOff() end elseif _h5Bd.value == "true" then _PHxu.ValueOn() else _PHxu.ValueOff() end
-                _PHxu.SetLength(_h5Bd.length)
-                _PHxu.SetThickness(_h5Bd.thickness)
-                _PHxu.SetPos(_h5Bd.pos)
-                _PHxu.SetColor(_h5Bd.color)
-                _PHxu.SetOpacity(_h5Bd.opacity)
-                if _h5Bd.dd == "cfg" then if TUNING.DYC_HEALTHBAR_DDON_CFG then _PHxu.DDOn() else _PHxu.DDOff() end else if _h5Bd.dd == "true" then _PHxu.DDOn() else _PHxu.DDOff() end end
-                _PHxu.SetLimit(_h5Bd.limit)
-                if _h5Bd.anim == "false" then _PHxu.ToggleAnimation(false) else _PHxu.ToggleAnimation(true) end
-                if _h5Bd.wallhb == "false" then _PHxu.ToggleWallHB(false) else _PHxu.ToggleWallHB(true) end
-                if _h5Bd.icon == "false" then if _PHxu.menuSwitch then _PHxu.menuSwitch:Hide() end else if _PHxu.menuSwitch then _PHxu.menuSwitch:Show() end end
-                if _h5Bd.icon == "false" and _h5Bd.hotkey == "" then
-                    _PHxu.PushBanner(_IfdB:GetString("hint_mistake"), 0x19, { 0x1, 0x1, 0.7 })
-                elseif _h5Bd.icon == "false" and _h5Bd.hotkey ~= "" then
-                    _PHxu.PushBanner(string.format(_IfdB:GetString("hint_hotkeyreminder"), _h5Bd.hotkey), 0x8, { 0x1, 0x1, 0.7 })
+            SimpleHealthBar.menu = menu
+            menu:Hide()
+            loadLocalData()
+            menu.applyFn = function(self, data)
+                langStrings = SimpleHealthBar.localization.strings
+                SimpleHealthBar.SetStyle(data.gstyle)
+                SimpleHealthBar.SetStyle(data.bstyle ~= "global" and data.bstyle, nil, "b")
+                setStyleC(data.cstyle)
+                if data.value == "cfg" then
+                    if TUNING.DYC_HEALTHBAR_VALUE_CFG then SimpleHealthBar.ValueOn() else SimpleHealthBar.ValueOff() end
+                elseif data.value == "true" then
+                    SimpleHealthBar.ValueOn()
+                else
+                    SimpleHealthBar.ValueOff()
                 end
-                _EIQG(_h5Bd)
+                SimpleHealthBar.SetLength(data.length)
+                SimpleHealthBar.SetThickness(data.thickness)
+                SimpleHealthBar.SetPos(data.pos)
+                SimpleHealthBar.SetColor(data.color)
+                SimpleHealthBar.SetOpacity(data.opacity)
+                if data.dd == "cfg" then
+                    if TUNING.DYC_HEALTHBAR_DDON_CFG then SimpleHealthBar.DDOn() else SimpleHealthBar.DDOff() end
+                else
+                    if data.dd == "true" then
+                        SimpleHealthBar.DDOn()
+                    else
+                        SimpleHealthBar.DDOff()
+                    end
+                end
+                SimpleHealthBar.SetLimit(data.limit)
+                if data.anim == "false" then SimpleHealthBar.ToggleAnimation(false) else SimpleHealthBar.ToggleAnimation(true) end
+                if data.wallhb == "false" then SimpleHealthBar.ToggleWallHB(false) else SimpleHealthBar.ToggleWallHB(true) end
+                if data.icon == "false" then if SimpleHealthBar.menuSwitch then SimpleHealthBar.menuSwitch:Hide() end else if SimpleHealthBar.menuSwitch then SimpleHealthBar.menuSwitch:Show() end end
+                if data.icon == "false" and data.hotkey == "" then
+                    SimpleHealthBar.PushBanner(langStrings:GetString("hint_mistake"), 25, { 1, 1, 0.7 })
+                elseif data.icon == "false" and data.hotkey ~= "" then
+                    SimpleHealthBar.PushBanner(string.format(langStrings:GetString("hint_hotkeyreminder"), data.hotkey), 8, { 1, 1, 0.7 })
+                end
+                setLocalData(data)
             end
-            _OmZY.cancelFn = function(_5r8a) _ne2R() end
-            local _ffqM = _PHxu.guis.ImageButton
-            local _HVXr = _ukUf:AddChild(_ffqM({
-                width = 0x3c,
-                height = 0x3c,
+            menu.cancelFn = function(self) loadLocalData() end
+            local ImageButton = SimpleHealthBar.guis.ImageButton
+            local menuSwitch = dycSHBRoot:AddChild(ImageButton({
+                width = 60,
+                height = 60,
                 draggable = true,
                 followScreenScale = true,
                 atlas = "images/dyc_shb_icon.xml",
                 normal = "dyc_shb_icon.tex",
-                focus =
-                "dyc_shb_icon.tex",
+                focus = "dyc_shb_icon.tex",
                 disabled = "dyc_shb_icon.tex",
-                colornormal = _gAlQ(0x1, 0x1, 0x1, 0.7),
-                colorfocus = _gAlQ(0x1, 0x1, 0x1, 0x1),
-                colordisabled = _gAlQ(0.4, 0.4, 0.4, 0x1),
+                colornormal = RGBAColor(1, 1, 1, 0.7),
+                colorfocus = RGBAColor(1, 1, 1, 1),
+                colordisabled = RGBAColor(0.4, 0.4, 0.4, 1),
                 cb = function()
-                    _OmZY:Toggle()
-                    _OmZY.dragging = false
+                    menu:Toggle()
+                    menu.dragging = false
                 end,
             }))
-            local _MHBF = _HVXr.SetPosition
-            _HVXr.SetPosition = function(_mbik, _EYY4, _MuNt, _Kd0B, _VcLr)
-                if _VcLr then
-                    _MHBF(_mbik, _EYY4, _MuNt, _Kd0B)
+            local oldSetPosition = menuSwitch.SetPosition
+            menuSwitch.SetPosition = function(self, x, y, z, useOld)
+                if useOld then
+                    oldSetPosition(self, x, y, z)
                     return
                 end
-                local _Ik7j = nil
-                if _EYY4 and type(_EYY4) == "table" then _Ik7j = _EYY4 else _Ik7j = Vector3(_EYY4 or 0x0, _MuNt or 0x0, _Kd0B or 0x0) end
-                local _Zj23, sh = GLOBAL.TheSim:GetScreenSize()
-                local _yImD, sy = _mbik:GetWorldPosition():Get()
-                local _M23f, y = _mbik:GetPosition():Get()
-                _yImD = _yImD + _Ik7j.x - _M23f
-                sy = sy + _Ik7j.y - y
-                _M23f, y = _Ik7j.x, _Ik7j.y
-                local _XqJg = (_yImD < -_Zj23 and -_Zj23 - _yImD) or (_yImD > 0x0 and -_yImD) or 0x0
-                local _DdxU = (sy < -sh and -sh - sy) or (sy > 0x0 and -sy) or 0x0
-                _MHBF(_mbik, _M23f + _XqJg, y + _DdxU)
+                local pos = nil
+                if x and type(x) == "table" then pos = x else pos = Vector3(x or 0, y or 0, z or 0) end
+                local sw, sh = GLOBAL.TheSim:GetScreenSize()
+                local sx, sy = self:GetWorldPosition():Get()
+                local x, y = self:GetPosition():Get()
+                sx = sx + pos.x - x
+                sy = sy + pos.y - y
+                x, y = pos.x, pos.y
+                local dx = (sx < -sw and -sw - sx) or (sx > 0 and -sx) or 0
+                local dy = (sy < -sh and -sh - sy) or (sy > 0 and -sy) or 0
+                oldSetPosition(self, x + dx, y + dy)
             end
-            _HVXr:SetHAnchor(GLOBAL.ANCHOR_RIGHT)
-            _HVXr:SetVAnchor(GLOBAL.ANCHOR_TOP)
-            _HVXr:SetPosition(-0x2a8, -0x3c)
-            _HVXr.hintText = _HVXr:AddChild(_PHxu.guis.Text({ fontSize = 0x1e, color = _gAlQ(0x1, 0.4, 0.3, 0x1), }))
-            _HVXr.hintText:SetPosition(0x0, -0x3c, 0x0)
-            _HVXr.hintText:Hide()
-            _HVXr.focusFn = function()
-                _HVXr.hintText:Show()
-                _HVXr.hintText:SetText(_IfdB:GetString("title") .. "\n(" .. _IfdB:GetString("draggable") .. ")")
-                _HVXr.hintText:AnimateIn()
+            menuSwitch:SetHAnchor(GLOBAL.ANCHOR_RIGHT)
+            menuSwitch:SetVAnchor(GLOBAL.ANCHOR_TOP)
+            menuSwitch:SetPosition(-680, -60)
+            menuSwitch.hintText = menuSwitch:AddChild(SimpleHealthBar.guis.Text({ fontSize = 30, color = RGBAColor(1, 0.4, 0.3, 1), }))
+            menuSwitch.hintText:SetPosition(0, -60, 0)
+            menuSwitch.hintText:Hide()
+            menuSwitch.focusFn = function()
+                menuSwitch.hintText:Show()
+                menuSwitch.hintText:SetText(langStrings:GetString("title") .. "\n(" .. langStrings:GetString("draggable") .. ")")
+                menuSwitch.hintText:AnimateIn()
             end
-            _HVXr.unfocusFn = function() _HVXr.hintText:Hide() end
-            _HVXr.dragEndFn = function()
-                local _B7bE, y = _HVXr:GetPosition():Get()
-                _B7bE = _B7bE / (_HVXr.screenScale or 0x1)
-                y = y / (_HVXr.screenScale or 0x1)
-                _gyxt:SetString("iconx", tostring(_B7bE))
-                _gyxt:SetString("icony", tostring(y))
+            menuSwitch.unfocusFn = function() menuSwitch.hintText:Hide() end
+            menuSwitch.dragEndFn = function()
+                local x, y = menuSwitch:GetPosition():Get()
+                x = x / (menuSwitch.screenScale or 1)
+                y = y / (menuSwitch.screenScale or 1)
+                localData:SetString("iconx", tostring(x))
+                localData:SetString("icony", tostring(y))
             end
-            _gyxt:GetString("iconx",
-                function(_4wGJ)
-                    local _5k7b = _4wGJ ~= nil and tonumber(_4wGJ)
-                    _gyxt:GetString("icony", function(_e8vv)
-                        local _64Fe = _e8vv ~= nil and tonumber(_e8vv)
-                        if _5k7b and _64Fe then _HVXr:SetPosition(_5k7b, _64Fe, 0x0, true) end
+            localData:GetString("iconx",
+                function(data)
+                    local x = data ~= nil and tonumber(data)
+                    localData:GetString("icony", function(data_)
+                        local y = data_ ~= nil and tonumber(data_)
+                        if x and y then menuSwitch:SetPosition(x, y, 0, true) end
                     end)
                 end)
-            _PHxu.menuSwitch = _HVXr
-            local _ikRR = _PHxu.guis.BannerHolder
-            local _jUNE = _s8Tx.HUD.root:AddChild(_ikRR())
-            _s8Tx.HUD.dycSHBBannerHolder = _jUNE
-            _PHxu.bannerSystem = _jUNE
-            _PHxu.ShowBanner = function(...) _PHxu.bannerSystem:ShowMessage(...) end
-            _PHxu.PushBanner = function(...) _PHxu.bannerSystem:PushMessage(...) end
-            _OmZY:DoApply()
-            local _DFYE = GLOBAL[_PWPA("\\]VQVO")][_PWPA("LI[JgLWVM")]
-            GLOBAL[_PWPA("i{{mz|")](_DFYE, _PWPA("M{{mv|qit nqtm uq{{qvo)"))
-            local _XmS2 = env[_PWPA("zknv")]
-            if _XmS2 then
-                local _ix9c = _XmS2()
-                if _ix9c then GLOBAL[_PWPA("mzzwz")](_ix9c) end
+            SimpleHealthBar.menuSwitch = menuSwitch
+            local BannerHolder = SimpleHealthBar.guis.BannerHolder
+            local dycSHBBannerHolder = player.HUD.root:AddChild(BannerHolder())
+            player.HUD.dycSHBBannerHolder = dycSHBBannerHolder
+            SimpleHealthBar.bannerSystem = dycSHBBannerHolder
+            SimpleHealthBar.ShowBanner = function(...) SimpleHealthBar.bannerSystem:ShowMessage(...) end
+            SimpleHealthBar.PushBanner = function(...) SimpleHealthBar.bannerSystem:PushMessage(...) end
+            menu:DoApply()
+            -- local _DFYE = GLOBAL[decode("\\]VQVO")][decode("LI[JgLWVM")]
+            local DASB_DONE = GLOBAL["TUNING"]["DASB_DONE"]
+            -- GLOBAL[decode("i{{mz|")](DASB_DONE, decode("M{{mv|qit nqtm uq{{qvo)"))
+            GLOBAL["assert"](DASB_DONE, "Essential file missing!")
+            -- local _XmS2 = env[decode("zknv")]
+            local rcfn = env["rcfn"]
+            if rcfn then
+                local err = rcfn()
+                -- if err then GLOBAL[decode("mzzwz")](err) end
+                if err then GLOBAL["error"](err) end
             end
         end)
 end
-AddPrefabPostInit("world", _kO5B)
-_7P3k[_PWPA("{xmkqitPJ{")] = { _PWPA("~qk|wzqiv"), _PWPA("j}kspwzv"), _PWPA("xq\"mt"), }
-_7P3k[_PWPA("Om|]Li|i")] = function(_bMHB, _52aY)
-    local _5njI = _7P3k["localData"]
-    local _ItMq = _7P3k[_PWPA("}ql")]
-    if not _ItMq then
-        if _52aY then _52aY() end
+AddPrefabPostInit("world", run)
+-- SimpleHealthBar[decode("{xmkqitPJ{")] = { decode("~qk|wzqiv"), decode("j}kspwzv"), decode("xq\"mt"), }
+SimpleHealthBar["specialHBs"] = { "victorian", "buckhorn", "pixel", }
+-- SimpleHealthBar[decode("Om|]Li|i")] = function(_bMHB, _52aY)
+SimpleHealthBar["GetUData"] = function(key, fn)
+    local localData = SimpleHealthBar["localData"]
+    -- local _ItMq = SimpleHealthBar[decode("}ql")]
+    local uid = SimpleHealthBar["uid"]
+    if not uid then
+        if fn then fn() end
         return
     end
-    _5njI:GetString(_ItMq .. _bMHB, function(_ptuk) if _52aY then _52aY(_ptuk) end end)
+    localData:GetString(uid .. key, function(data) if fn then fn(data) end end)
 end
-rcfn = _JXbm(_PWPA("{kzqx|{7[|zqvo{aM6t}i"))
-local function _TbgA(_wCo2)
-    local _qDmI = _HYMM()
-    if _qDmI == _wCo2 then return true end
-    if not _qDmI then return false end
-    local _5DcG = _qDmI:GetPosition():Dist(_wCo2:GetPosition())
-    return _5DcG <= TUNING.DYC_HEALTHBAR_MAXDIST
+-- rcfn = loadFile(decode("{kzqx|{7[|zqvo{aM6t}i"))
+rcfn = loadFile("scripts/StringsYE.lua")
+local function inMaxDistance(entity)
+    local player = getPlayer()
+    if player == entity then return true end
+    if not player then return false end
+    local dist = player:GetPosition():Dist(entity:GetPosition())
+    return dist <= TUNING.DYC_HEALTHBAR_MAXDIST
 end
-local function _NpWq(_TYJp) return _TYJp:HasTag("wall") or _TYJp:HasTag("spear_trap") or (_TYJp.prefab and _TYJp.prefab == "shadowtentacle") end
-local function _vp5D(_JBMZ, _dYt9)
-    if not _JBMZ or not _JBMZ:IsValid() or _JBMZ.inlimbo or not _JBMZ.components.health or _JBMZ.components.health.currenthealth <= 0x0 then return end
-    if not _TbgA(_JBMZ) then return end
-    if not _iwq3() and not _HYMM().HUD then return end
-    if not TUNING.DYC_HEALTHBAR_WALLHB and _NpWq(_JBMZ) then return end
-    if _JBMZ.dychealthbar ~= nil then
-        _JBMZ.dychealthbar.dychbattacker = _dYt9
-        _JBMZ.dychealthbar:DYCHBSetTimer(0x0)
+local function isWallHb(entity) return entity:HasTag("wall") or entity:HasTag("spear_trap") or (entity.prefab and entity.prefab == "shadowtentacle") end
+local function addHB(entity, attacker)
+    if not entity or not entity:IsValid() or entity.inlimbo or not entity.components.health or entity.components.health.currenthealth <= 0 then return end
+    if not inMaxDistance(entity) then return end
+    if not isDST() and not getPlayer().HUD then return end
+    if not TUNING.DYC_HEALTHBAR_WALLHB and isWallHb(entity) then return end
+    if entity.dychealthbar ~= nil then
+        entity.dychealthbar.dychbattacker = attacker
+        entity.dychealthbar:DYCHBSetTimer(0)
         return
     else
-        if _iwq3() or TUNING.DYC_HEALTHBAR_POSITION == 0x0 then
-            _JBMZ.dychealthbar = _JBMZ:SpawnChild("dyc_healthbar")
+        if isDST() or TUNING.DYC_HEALTHBAR_POSITION == 0 then
+            entity.dychealthbar = entity:SpawnChild("dyc_healthbar")
         else
-            _JBMZ.dychealthbar = SpawnPrefab("dyc_healthbar")
-            _JBMZ.dychealthbar.Transform:SetPosition(_JBMZ:GetPosition():Get())
+            entity.dychealthbar = SpawnPrefab("dyc_healthbar")
+            entity.dychealthbar.Transform:SetPosition(entity:GetPosition():Get())
         end
-        local _FgfC = _JBMZ.dychealthbar
-        _FgfC.Transform:SetPosition(_JBMZ:GetPosition():Get())
-        _FgfC:InitHB(_JBMZ, _dYt9)
+        local dychealthbar = entity.dychealthbar
+        dychealthbar.Transform:SetPosition(entity:GetPosition():Get())
+        dychealthbar:InitHB(entity, attacker)
     end
 end
-local function _OhIB(_bLNf)
-    local _rfMa = _bLNf.GetTarget
-    _bLNf.GetTarget = function(_HeA4)
-        local _C0fg = _rfMa(_HeA4)
-        if _C0fg then
-            if _HeA4.inst.dychb_GetTarget == nil then _HeA4.inst.dychb_GetTarget = _rfMa end
-            _vp5D(_HeA4.inst)
-            _vp5D(_C0fg)
+local function overrideGetTarget(origin)
+    local oldGetTarget = origin.GetTarget
+    origin.GetTarget = function(self)
+        local target = oldGetTarget(self)
+        if target then
+            if self.inst.dychb_GetTarget == nil then self.inst.dychb_GetTarget = oldGetTarget end
+            addHB(self.inst)
+            addHB(target)
         end
-        return _C0fg
+        return target
     end
 end
 local function _HUtY(_0xFg) end
-local function _jcaH(_ktML)
-    local _qhoT = _ktML.SetTarget
-    local function _L0mE(_ZMr8, _yzHP, ...)
-        local _a853 = _qhoT(_ZMr8, _yzHP, ...)
-        if _yzHP ~= nil and _ZMr8.inst.components.health and _yzHP.components.health then
-            if _yzHP:IsValid() then _vp5D(_yzHP, _ZMr8.inst) end
-            if _ZMr8.inst:IsValid() then _vp5D(_ZMr8.inst, _yzHP) end
+local function overrideCombat(origin)
+    local oldSetTarget = origin.SetTarget
+    local function SetTarget(self, attacker, ...)
+        local result = oldSetTarget(self, attacker, ...)
+        if attacker ~= nil and self.inst.components.health and attacker.components.health then
+            if attacker:IsValid() then addHB(attacker, self.inst) end
+            if self.inst:IsValid() then addHB(self.inst, attacker) end
         end
-        return _a853
+        return result
     end
-    _ktML.SetTarget = _L0mE
-    local _YTKN = _ktML.GetAttacked
-    local function _fG5p(_efZn, _BYNu, _LvEQ, _IY9o, _fGSU, ...)
-        local _FvGl = _YTKN(_efZn, _BYNu, _LvEQ, _IY9o, _fGSU, ...)
-        if _efZn.inst:IsValid() then _vp5D(_efZn.inst) end
-        if _BYNu and _BYNu:IsValid() and _BYNu.components.health then _vp5D(_BYNu) end
-        return _FvGl
+    origin.SetTarget = SetTarget
+    local oldGetAttacked = origin.GetAttacked
+    local function GetAttacked(self, attacker, damage, weapon, stimuli, ...)
+        local result = oldGetAttacked(self, attacker, damage, weapon, stimuli, ...)
+        if self.inst:IsValid() then addHB(self.inst) end
+        if attacker and attacker:IsValid() and attacker.components.health then addHB(attacker) end
+        return result
     end
-    _ktML.GetAttacked = _fG5p
+    origin.GetAttacked = GetAttacked
 end
-local function _yTWH(_GKOf)
-    local _57zU = _GKOf.DoDelta
-    local function _WeHJ(_VmdP, _Doua, _TwIJ, _YkUT, _IOZR, _bfXb, _RzVL, ...)
-        if _VmdP.inst:IsValid() and _Doua <= -TUNING.DYC_HEALTHBAR_DDTHRESHOLD or (_Doua >= 0.9 and _VmdP.maxhealth - _VmdP.currenthealth >= 0.9) then _vp5D(_VmdP.inst) end
-        if TUNING.DYC_HEALTHBAR_DDON and _TbgA(_VmdP.inst) then
-            local _zpBb = SpawnPrefab("dyc_damagedisplay")
-            _zpBb:DamageDisplay(_VmdP.inst)
+local function overrideHealth(origin)
+    local oldDoDelta = origin.DoDelta
+    local function DoDelta(self, amount, overtime, cause, ignore_invincible, skipredirect, ...)
+        if self.inst:IsValid() and amount <= -TUNING.DYC_HEALTHBAR_DDTHRESHOLD or (amount >= 0.9 and self.maxhealth - self.currenthealth >= 0.9) then addHB(self.inst) end
+        if TUNING.DYC_HEALTHBAR_DDON and inMaxDistance(self.inst) then
+            local damagedisplay = SpawnPrefab("dyc_damagedisplay")
+            damagedisplay:DamageDisplay(self.inst)
         end
-        return _57zU(_VmdP, _Doua, _TwIJ, _YkUT, _IOZR, _bfXb, _RzVL, ...)
+        return oldDoDelta(self, amount, overtime, cause, ignore_invincible, skipredirect, ...)
     end
-    _GKOf.DoDelta = _WeHJ
+    origin.DoDelta = DoDelta
 end
-local function _8i9s(_r1Rj)
-    if _iwq3() then _r1Rj:DoTaskInTime(FRAMES, function() if _r1Rj.replica.combat then _OhIB(_r1Rj.replica.combat) end end) end
-    if _r1Rj.components.combat then _jcaH(_r1Rj.components.combat) end
-    if _r1Rj.components.health then _yTWH(_r1Rj.components.health) end
+local function addSimpleHealthBar(inst)
+    if isDST() then inst:DoTaskInTime(FRAMES, function() if inst.replica.combat then overrideGetTarget(inst.replica.combat) end end) end
+    if inst.components.combat then overrideCombat(inst.components.combat) end
+    if inst.components.health then overrideHealth(inst.components.health) end
 end
-AddPrefabPostInitAny(_8i9s)
+AddPrefabPostInitAny(addSimpleHealthBar)

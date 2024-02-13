@@ -1,212 +1,231 @@
-local _p687 = require "widgets/widget"
-local _vKVE = require "widgets/image"
-local _kD2a = require "widgets/text"
-local _NQZ0 = require "widgets/screen"
-local _MRTf = require "widgets/button"
-local _Q24p = require "widgets/spinner"
-local _OX5t = {}
-local function _cvrO() return TheSim:GetGameID() == "DST" end
-local function _V4Zt() if _cvrO() then return ThePlayer else return GetPlayer() end end
-local function _33o2() if _cvrO() then return TheWorld else return GetWorld() end end
-local _iOOp = function()
-    local _U2Q5, sh = TheSim:GetScreenSize()
-    return _U2Q5 / 0x780
+local Widget = require "widgets/widget"
+local Image = require "widgets/image"
+local Text = require "widgets/text"
+local Screen = require "widgets/screen"
+local Button = require "widgets/button"
+local Spinner = require "widgets/spinner"
+local dycGuis = {}
+
+--#region tool functions
+local function isDST() return TheSim:GetGameID() == "DST" end
+local function getPlayer() if isDST() then return ThePlayer else return GetPlayer() end end
+local function getWorld() if isDST() then return TheWorld else return GetWorld() end end
+local getWidthScal = function()
+    local w, h = TheSim:GetScreenSize()
+    return w / 1920
 end
-local _eS3z = function() return TheSim:GetScreenPos(TheInput:GetWorldPosition():Get()) end
-local _ZWzx = function(_cSsI, _PBBZ, _lnpT, _1F6S) return { r = _cSsI or 0x1, g = _PBBZ or 0x1, b = _lnpT or 0x1, a = _1F6S or 0x1, Get = function(_D17c) return _D17c.r, _D17c.g, _D17c.b, _D17c.a end, } end
-local _nOFV = function(_hapt, _C2Z8, _EBrk) return _hapt + (_C2Z8 - _hapt) * _EBrk end
-local function _LPnR(_mZeG, _N6dI)
-    if _N6dI == nil then _N6dI = "%s" end
-    local _Vk58 = {}
-    local _Zxjx = 0x1
-    for _nGBO in string.gmatch(_mZeG, "([^" .. _N6dI .. "]+)") do
-        _Vk58[_Zxjx] = _nGBO
-        _Zxjx = _Zxjx + 0x1
+local getMouseScreenPos = function() return TheSim:GetScreenPos(TheInput:GetWorldPosition():Get()) end
+local RGBAColor = function(r, g, b, a)
+    return {
+        r = r or 1,
+        g = g or 1,
+        b = b or 1,
+        a = a or 1,
+        Get = function(self) return self.r, self.g, self.b, self.a end,
+    }
+end
+local lerp = function(a, b, t) return a + (b - a) * t end
+local function StrSpl(str, separators)
+    if separators == nil then separators = "%s" end
+    local spls = {}
+    local i = 1
+    for world in string.gmatch(str, "([^" .. separators .. "]+)") do
+        spls[i] = world
+        i = i + 1
     end
-    return _Vk58
+    return spls
 end
-local _liws = function(_yqoz, _oWhX)
-    for _NpZy, _K9ik in pairs(_yqoz) do if _K9ik == _oWhX then return true end end
+local tableContains = function(table, value)
+    for _, v in pairs(table) do if v == value then return true end end
     return false
 end
-local _6QIr = function(_70jh, _s37e) if not _liws(_70jh, _s37e) then table.insert(_70jh, _s37e) end end
-local _oIFe = function(_CViw, _SOt9) for _dhuJ, _HUXo in pairs(_CViw) do if _HUXo == _SOt9 then return _dhuJ end end end
-local _yrSF = function(_JfvH, _gghv)
-    local _YdJf = _oIFe(_JfvH, _gghv)
-    if _YdJf then table.remove(_JfvH, _YdJf) end
+local tableAdd = function(tableTo, value) if not tableContains(tableTo, value) then table.insert(tableTo, value) end end
+local TableGetIndex = function(table, value) for k, v in pairs(table) do if v == value then return k end end end
+local TableRemoveValue = function(tableTo, value)
+    local index = TableGetIndex(tableTo, value)
+    if index then table.remove(tableTo, index) end
 end
-local _UU6Y = Class(_p687, function(_1VBs, _wJoZ)
-    _p687._ctor(_1VBs, "DYC_Root")
-    _1VBs.keepTop = _wJoZ.keepTop
-    _1VBs.moveLayerTimer = 0x0
-    if _wJoZ.keepTop then _1VBs:StartUpdating() end
+--#endregion
+
+--#region dycRoot
+local dycRoot = Class(Widget, function(self, parent)
+    Widget._ctor(self, "DYC_Root")
+    self.keepTop = parent.keepTop
+    self.moveLayerTimer = 0
+    if parent.keepTop then self:StartUpdating() end
 end)
-function _UU6Y:OnUpdate(_GKJH)
-    _GKJH = _GKJH or 0x0
-    self.moveLayerTimer = self.moveLayerTimer + _GKJH
+function dycRoot:OnUpdate(time)
+    time = time or 0
+    self.moveLayerTimer = self.moveLayerTimer + time
     if self.keepTop and self.moveLayerTimer > 0.5 then
-        self.moveLayerTimer = 0x0
+        self.moveLayerTimer = 0
         self:MoveToFront()
     end
 end
 
-_OX5t.Root = _UU6Y
-local _fTP7 = Class(_kD2a,
-    function(_0aFw, _AKqL, _G8k9, _IoZW, _Y8xN)
-        if _AKqL and type(_AKqL) == "table" then
-            local _Zzi9 = _AKqL
-            _kD2a._ctor(_0aFw, _Zzi9.font or NUMBERFONT, _Zzi9.fontSize or 0x1e, _Zzi9.text)
-            if _Zzi9.color then
-                local _0FbG = _Zzi9.color
-                _0aFw:SetColor(_0FbG.r or _0FbG[0x1] or 0x1, _0FbG.g or _0FbG[0x2] or 0x1, _0FbG.b or _0FbG[0x3] or 0x1, _0FbG.a or _0FbG[0x4] or 0x1)
+dycGuis.Root = dycRoot
+--#endregion
+
+--#region dycText
+local dycText = Class(Text,
+    function(self, font, size, text, hittest)
+        if font and type(font) == "table" then
+            local tempFont = font
+            Text._ctor(self, tempFont.font or NUMBERFONT, tempFont.fontSize or 30, tempFont.text)
+            if tempFont.color then
+                local color = tempFont.color
+                self:SetColor(color.r or color[1] or 1, color.g or color[2] or 1, color.b or color[3] or 1, color.a or color[4] or 1)
             end
-            if _Zzi9.regionSize then _0aFw:SetRegionSize(_Zzi9.regionSize.w, _Zzi9.regionSize.h) end
-            _0aFw.alignH = _Zzi9.alignH
-            _0aFw.alignV = _Zzi9.alignV
-            _0aFw.focusFn = _Zzi9.focusFn
-            _0aFw.unfocusFn = _Zzi9.unfocusFn
-            _0aFw.hittest = _Zzi9.hittest
+            if tempFont.regionSize then self:SetRegionSize(tempFont.regionSize.w, tempFont.regionSize.h) end
+            self.alignH = tempFont.alignH
+            self.alignV = tempFont.alignV
+            self.focusFn = tempFont.focusFn
+            self.unfocusFn = tempFont.unfocusFn
+            self.hittest = tempFont.hittest
         else
-            _kD2a._ctor(_0aFw, _AKqL or NUMBERFONT, _G8k9 or 0x1e, _IoZW)
-            _0aFw.hittest = _Y8xN
-            if _IoZW then _0aFw:SetText(_IoZW) end
+            Text._ctor(self, font or NUMBERFONT, size or 30, text)
+            self.hittest = hittest
+            if text then self:SetText(text) end
         end
     end)
-function _fTP7:GetImage()
+function dycText:GetImage()
     if not self.image then
-        self.image = self:AddChild(_vKVE("images/ui.xml", "button.tex"))
+        self.image = self:AddChild(Image("images/ui.xml", "button.tex"))
         self.image:MoveToBack()
-        self.image:SetTint(0x0, 0x0, 0x0, 0x0)
+        self.image:SetTint(0, 0, 0, 0)
     end
     return self.image
 end
 
-function _fTP7:SetText(_GKpe)
-    local _xMpT = self:GetWidth()
-    local _pKyq = self:GetHeight()
-    local _F0Vy = self:GetPosition()
-    self:SetString(_GKpe)
+function dycText:SetText(text)
+    local width = self:GetWidth()
+    local height = self:GetHeight()
+    local position = self:GetPosition()
+    self:SetString(text)
     if self.alignH and self.alignH ~= ANCHOR_MIDDLE then
-        local _yorr = self:GetWidth()
-        _F0Vy.x = _F0Vy.x + (_yorr - _xMpT) / 0x2 * (self.alignH == ANCHOR_LEFT and 0x1 or -0x1)
+        local width_ = self:GetWidth()
+        position.x = position.x + (width_ - width) / 2 * (self.alignH == ANCHOR_LEFT and 1 or -1)
     end
     if self.alignV and self.alignV ~= ANCHOR_MIDDLE then
-        local _UXTh = self:GetHeight()
-        _F0Vy.y = _F0Vy.y + (_UXTh - _pKyq) / 0x2 * (self.alignV == ANCHOR_BOTTOM and 0x1 or -0x1)
+        local height_ = self:GetHeight()
+        position.y = position.y + (height_ - height) / 2 * (self.alignV == ANCHOR_BOTTOM and 1 or -1)
     end
-    if self.alignH or self.alignV then self:SetPosition(_F0Vy) end
+    if self.alignH or self.alignV then self:SetPosition(position) end
     if self.hittest then self:GetImage():SetSize(self:GetSize()) end
 end
 
-function _fTP7:SetColor(...) self:SetColour(...) end
+function dycText:SetColor(...) self:SetColour(...) end
 
-function _fTP7:GetWidth()
-    local _wchA, h = self:GetRegionSize()
-    _wchA = _wchA < 0x2710 and _wchA or 0x0
-    return _wchA
+function dycText:GetWidth()
+    local w, h = self:GetRegionSize()
+    w = w < 10000 and w or 0
+    return w
 end
 
-function _fTP7:GetHeight()
-    local _2FF4, h = self:GetRegionSize()
-    h = h < 0x2710 and h or 0x0
+function dycText:GetHeight()
+    local _, h = self:GetRegionSize()
+    h = h < 10000 and h or 0
     return h
 end
 
-function _fTP7:GetSize()
-    local _JTe6, h = self:GetRegionSize()
-    _JTe6 = _JTe6 < 0x2710 and _JTe6 or 0x0
-    h = h < 0x2710 and h or 0x0
-    return _JTe6, h
+function dycText:GetSize()
+    local w, h = self:GetRegionSize()
+    w = w < 10000 and w or 0
+    h = h < 10000 and h or 0
+    return w, h
 end
 
-function _fTP7:OnGainFocus()
-    _fTP7._base.OnGainFocus(self)
+function dycText:OnGainFocus()
+    dycText._base.OnGainFocus(self)
     if self.focusFn then self.focusFn(self) end
 end
 
-function _fTP7:OnLoseFocus()
-    _fTP7._base.OnLoseFocus(self)
+function dycText:OnLoseFocus()
+    dycText._base.OnLoseFocus(self)
     if self.unfocusFn then self.unfocusFn(self) end
 end
 
-function _fTP7:AnimateIn(_TfM6)
+function dycText:AnimateIn(speed)
     self.textString = self.string
-    self.animSpeed = _TfM6 or 0x3c
-    self.animIndex = 0x0
-    self.animTimer = 0x0
+    self.animSpeed = speed or 60
+    self.animIndex = 0
+    self.animTimer = 0
     self:SetText("")
     self:StartUpdating()
 end
 
-function _fTP7:OnUpdate(_9fHn)
-    _9fHn = _9fHn or 0x0
-    if _fTP7._base.OnUpdate then _fTP7._base.OnUpdate(self, _9fHn) end
-    if _9fHn > 0x0 and self.animIndex and self.textString and #self.textString > 0x0 then
-        self.animTimer = self.animTimer + _9fHn
-        if self.animTimer > 0x1 / self.animSpeed then
-            self.animTimer = 0x0
-            self.animIndex = self.animIndex + 0x1
+function dycText:OnUpdate(time)
+    time = time or 0
+    if dycText._base.OnUpdate then dycText._base.OnUpdate(self, time) end
+    if time > 0 and self.animIndex and self.textString and #self.textString > 0 then
+        self.animTimer = self.animTimer + time
+        if self.animTimer > 1 / self.animSpeed then
+            self.animTimer = 0
+            self.animIndex = self.animIndex + 1
             if self.animIndex > #self.textString then
                 self.animIndex = nil
                 self:SetText(self.textString)
             else
-                local _Kgh8 = string.byte(string.sub(self.textString, self.animIndex, self.animIndex))
-                if _Kgh8 and _Kgh8 > 0x7f then self.animIndex = self.animIndex + 0x2 end
-                self:SetText(string.sub(self.textString, 0x1, self.animIndex))
+                local char = string.byte(string.sub(self.textString, self.animIndex, self.animIndex))
+                if char and char > 127 then self.animIndex = self.animIndex + 2 end
+                self:SetText(string.sub(self.textString, 1, self.animIndex))
             end
         end
     end
 end
 
-_OX5t.Text = _fTP7
-local _OTLM = Class(_p687,
-    function(_oTVT, _0hSu)
-        _p687._ctor(_oTVT, "DYC_SlicedImage")
-        _oTVT.images = {}
-        _oTVT.mode = "slice13"
-        _oTVT.texScale = _0hSu.texScale or 0x1
-        _oTVT.width = 0x64
-        _oTVT.height = 0x64
-        _oTVT:SetTextures(_0hSu)
-    end)
-function _OTLM:__tostring() return string.format("%s (%s)", self.name, self.mode) end
+dycGuis.Text = dycText
+--#endregion
 
-function _OTLM:SetTextures(_EZ1U)
-    assert(_EZ1U.mode)
+--#region dycSlicedImage
+local dycSlicedImage = Class(Widget,
+    function(self, textures)
+        Widget._ctor(self, "DYC_SlicedImage")
+        self.images = {}
+        self.mode = "slice13"
+        self.texScale = textures.texScale or 1
+        self.width = 100
+        self.height = 100
+        self:SetTextures(textures)
+    end)
+function dycSlicedImage:__tostring() return string.format("%s (%s)", self.name, self.mode) end
+
+function dycSlicedImage:SetTextures(textures)
+    assert(textures.mode)
     self.images = {}
-    self.mode = _EZ1U.mode
+    self.mode = textures.mode
     if self.mode == "slice13" or self.mode == "slice31" then
-        local _eDQV = nil
-        _eDQV = self:AddChild(_vKVE(_EZ1U.atlas, _EZ1U.texname .. "_1.tex"))
-        _eDQV.oriW, _eDQV.oriH = _eDQV:GetSize()
-        _eDQV.imgPos = 0x1
-        self.images[0x1] = _eDQV
-        _eDQV = self:AddChild(_vKVE(_EZ1U.atlas, _EZ1U.texname .. "_2.tex"))
-        _eDQV.oriW, _eDQV.oriH = _eDQV:GetSize()
-        _eDQV.imgPos = 0x2
-        self.images[0x2] = _eDQV
-        _eDQV = self:AddChild(_vKVE(_EZ1U.atlas, _EZ1U.texname .. "_3.tex"))
-        _eDQV.oriW, _eDQV.oriH = _eDQV:GetSize()
-        _eDQV.imgPos = 0x3
-        self.images[0x3] = _eDQV
+        local newImage = nil
+        newImage = self:AddChild(Image(textures.atlas, textures.texname .. "_1.tex"))
+        newImage.oriW, newImage.oriH = newImage:GetSize()
+        newImage.imgPos = 1
+        self.images[1] = newImage
+        newImage = self:AddChild(Image(textures.atlas, textures.texname .. "_2.tex"))
+        newImage.oriW, newImage.oriH = newImage:GetSize()
+        newImage.imgPos = 2
+        self.images[2] = newImage
+        newImage = self:AddChild(Image(textures.atlas, textures.texname .. "_3.tex"))
+        newImage.oriW, newImage.oriH = newImage:GetSize()
+        newImage.imgPos = 3
+        self.images[3] = newImage
         if self.mode == "slice13" then
-            assert(self.images[0x1].oriH == self.images[0x3].oriH, "Height must be equal!")
-            assert(self.images[0x1].oriH == self.images[0x2].oriH, "Height must be equal!")
+            assert(self.images[1].oriH == self.images[3].oriH, "Height must be equal!")
+            assert(self.images[1].oriH == self.images[2].oriH, "Height must be equal!")
         else
-            assert(self.images[0x1].oriW == self.images[0x3].oriW, "Width must be equal!")
-            assert(self.images[0x1].oriW == self.images[0x2].oriW, "Width must be equal!")
+            assert(self.images[1].oriW == self.images[3].oriW, "Width must be equal!")
+            assert(self.images[1].oriW == self.images[2].oriW, "Width must be equal!")
         end
         return
     elseif self.mode == "slice33" then
-        local _VYPs = nil
-        for _LvrP = 0x1, 0x3 do
-            for _pFHp = 0x1, 0x3 do
-                _VYPs = self:AddChild(_vKVE(_EZ1U.atlas, _EZ1U.texname .. "_" .. _LvrP .. _pFHp .. ".tex"))
-                _VYPs.oriW, _VYPs.oriH = _VYPs:GetSize()
-                _VYPs.imgPos = _LvrP * 0xa + _pFHp
-                self.images[_LvrP * 0xa + _pFHp] = _VYPs
-                if _LvrP > 0x1 then assert(self.images[_LvrP * 0xa + _pFHp].oriW == self.images[(_LvrP - 0x1) * 0xa + _pFHp].oriW, "Width must be equal!") end
-                if _pFHp > 0x1 then assert(self.images[_LvrP * 0xa + _pFHp].oriH == self.images[_LvrP * 0xa + _pFHp - 0x1].oriH, "Height must be equal!") end
+        local newImage = nil
+        for i = 1, 3 do
+            for j = 1, 3 do
+                newImage = self:AddChild(Image(textures.atlas, textures.texname .. "_" .. i .. j .. ".tex"))
+                newImage.oriW, newImage.oriH = newImage:GetSize()
+                newImage.imgPos = i * 10 + j
+                self.images[i * 10 + j] = newImage
+                if i > 1 then assert(self.images[i * 10 + j].oriW == self.images[(i - 1) * 10 + j].oriW, "Width must be equal!") end
+                if j > 1 then assert(self.images[i * 10 + j].oriH == self.images[i * 10 + j - 1].oriH, "Height must be equal!") end
             end
         end
         return
@@ -215,233 +234,239 @@ function _OTLM:SetTextures(_EZ1U)
     self:SetSize()
 end
 
-function _OTLM:SetSize(_4iVi, _43P0)
-    _4iVi = _4iVi or self.width
-    _43P0 = _43P0 or self.height
+function dycSlicedImage:SetSize(width, height)
+    width = width or self.width
+    height = height or self.height
     if self.mode == "slice13" then
-        local _8vgL = self.images[0x1]
-        local _xsBk = self.images[0x2]
-        local _nXjg = self.images[0x3]
-        local _zwnZ = math.min(self.texScale, math.min(_4iVi / (_8vgL.oriW + _nXjg.oriW), _43P0 / _8vgL.oriH))
-        local _esa3 = _8vgL.oriW * _zwnZ
-        local _BfDv = _nXjg.oriW * _zwnZ
-        local _KDzv = math.max(0x0, _4iVi - _esa3 - _BfDv)
-        _8vgL:SetSize(_esa3, _43P0)
-        _xsBk:SetSize(_KDzv, _43P0)
-        _nXjg:SetSize(_BfDv, _43P0)
-        local _dTZl = (_esa3 - _BfDv) / 0x2
-        local _Y0XA = -_esa3 / 0x2 - _KDzv / 0x2 + _dTZl
-        local _Sd5t = _BfDv / 0x2 + _KDzv / 0x2 + _dTZl
-        _8vgL:SetPosition(_Y0XA, 0x0, 0x0)
-        _xsBk:SetPosition(_dTZl, 0x0, 0x0)
-        _nXjg:SetPosition(_Sd5t, 0x0, 0x0)
-        self.width = _esa3 + _KDzv + _BfDv
-        self.height = _43P0
+        local image1 = self.images[1]
+        local image2 = self.images[2]
+        local image3 = self.images[3]
+        local texScale = math.min(self.texScale, math.min(width / (image1.oriW + image3.oriW), height / image1.oriH))
+        local w1 = math.floor(image1.oriW * texScale)
+        local w2 = math.floor(image3.oriW * texScale)
+        local w3 = math.max(0, width - w1 - w2)
+        image1:SetSize(w1, height)
+        image2:SetSize(w3, height)
+        image3:SetSize(w2, height)
+        local x2 = (w1 - w2) / 2
+        local x1 = -w1 / 2 - w3 / 2 + x2
+        local x3 = w2 / 2 + w3 / 2 + x2
+        image1:SetPosition(x1, 0, 0)
+        image2:SetPosition(x2, 0, 0)
+        image3:SetPosition(x3, 0, 0)
+        self.width = w1 + w3 + w2
+        self.height = height
     elseif self.mode == "slice31" then
-        local _3hCC = self.images[0x1]
-        local _wAZI = self.images[0x2]
-        local _56dL = self.images[0x3]
-        local _2Wy2 = math.min(self.texScale, math.min(_43P0 / (_3hCC.oriH + _56dL.oriH), _4iVi / _3hCC.oriW))
-        local _1Ua3 = _3hCC.oriH * _2Wy2
-        local _2ghD = _56dL.oriH * _2Wy2
-        local _77sJ = math.max(0x0, _43P0 - _1Ua3 - _2ghD)
-        _3hCC:SetSize(_4iVi, _1Ua3)
-        _wAZI:SetSize(_4iVi, _77sJ)
-        _56dL:SetSize(_4iVi, _2ghD)
-        local _JWha = (_1Ua3 - _2ghD) / 0x2
-        local _wRau = -_1Ua3 / 0x2 - _77sJ / 0x2 + _JWha
-        local _Na8j = _2ghD / 0x2 + _77sJ / 0x2 + _JWha
-        _3hCC:SetPosition(0x0, _wRau, 0x0)
-        _wAZI:SetPosition(0x0, _JWha, 0x0)
-        _56dL:SetPosition(0x0, _Na8j, 0x0)
-        self.height = _1Ua3 + _77sJ + _2ghD
-        self.width = _4iVi
+        local image1 = self.images[1]
+        local image2 = self.images[2]
+        local image3 = self.images[3]
+        local texScale = math.min(self.texScale, math.min(height / (image1.oriH + image3.oriH), width / image1.oriW))
+        local h1 = math.floor(image1.oriH * texScale)
+        local h3 = math.floor(image3.oriH * texScale)
+        local h2 = math.max(0, height - h1 - h3)
+        image1:SetSize(width, h1)
+        image2:SetSize(width, h2)
+        image3:SetSize(width, h3)
+        local y2 = (h1 - h3) / 2
+        local y1 = -h1 / 2 - h2 / 2 + y2
+        local y3 = h3 / 2 + h2 / 2 + y2
+        image1:SetPosition(0, y1, 0)
+        image2:SetPosition(0, y2, 0)
+        image3:SetPosition(0, y3, 0)
+        self.height = h1 + h2 + h3
+        self.width = width
     elseif self.mode == "slice33" then
-        local _N1Ag = self.images
-        local _Qotc = math.min(self.texScale, math.min(_4iVi / (_N1Ag[0xb].oriW + _N1Ag[0xd].oriW), _43P0 / (_N1Ag[0xb].oriH + _N1Ag[0x1f].oriH)))
-        local _C5J7, hs, xs, ys = {}, {}, {}, {}
-        _C5J7[0x1] = _N1Ag[0xb].oriW * _Qotc
-        _C5J7[0x3] = _N1Ag[0xd].oriW * _Qotc
-        _C5J7[0x2] = math.max(0x0, _4iVi - _C5J7[0x1] - _C5J7[0x3])
-        hs[0x1] = _N1Ag[0xb].oriH * _Qotc
-        hs[0x3] = _N1Ag[0x1f].oriH * _Qotc
-        hs[0x2] = math.max(0x0, _43P0 - hs[0x1] - hs[0x3])
-        xs[0x2] = (_C5J7[0x1] - _C5J7[0x3]) / 0x2
-        xs[0x1] = -_C5J7[0x1] / 0x2 - _C5J7[0x2] / 0x2 + xs[0x2]
-        xs[0x3] = _C5J7[0x3] / 0x2 + _C5J7[0x2] / 0x2 + xs[0x2]
-        ys[0x2] = (hs[0x1] - hs[0x3]) / 0x2
-        ys[0x1] = -hs[0x1] / 0x2 - hs[0x2] / 0x2 + ys[0x2]
-        ys[0x3] = hs[0x3] / 0x2 + hs[0x2] / 0x2 + ys[0x2]
-        for _dbAX = 0x1, 0x3 do
-            for _98Fy = 0x1, 0x3 do
-                _N1Ag[_dbAX * 0xa + _98Fy]:SetSize(_C5J7[_98Fy], hs[_dbAX])
-                _N1Ag[_dbAX * 0xa + _98Fy]:SetPosition(xs[_98Fy], ys[_dbAX], 0x0)
+        local images = self.images
+        local texScale = math.min(self.texScale, math.min(width / (images[11].oriW + images[13].oriW), height / (images[11].oriH + images[31].oriH)))
+        local ws, hs, xs, ys = {}, {}, {}, {}
+        ws[1] = math.floor(images[11].oriW * texScale)
+        ws[3] = math.floor(images[13].oriW * texScale)
+        ws[2] = math.max(0, width - ws[1] - ws[3])
+        hs[1] = math.floor(images[11].oriH * texScale)
+        hs[3] = math.floor(images[31].oriH * texScale)
+        hs[2] = math.max(0, height - hs[1] - hs[3])
+        xs[2] = (ws[1] - ws[3]) / 2
+        xs[1] = -ws[1] / 2 - ws[2] / 2 + xs[2]
+        xs[3] = ws[3] / 2 + ws[2] / 2 + xs[2]
+        ys[2] = (hs[1] - hs[3]) / 2
+        ys[1] = -hs[1] / 2 - hs[2] / 2 + ys[2]
+        ys[3] = hs[3] / 2 + hs[2] / 2 + ys[2]
+        for i = 1, 3 do
+            for j = 1, 3 do
+                images[i * 10 + j]:SetSize(ws[j], hs[i])
+                images[i * 10 + j]:SetPosition(xs[j], ys[i], 0)
             end
         end
-        self.width = _C5J7[0x1] + _C5J7[0x2] + _C5J7[0x3]
-        self.height = hs[0x1] + hs[0x2] + hs[0x3]
+        self.width = ws[1] + ws[2] + ws[3]
+        self.height = hs[1] + hs[2] + hs[3]
     end
 end
 
-function _OTLM:GetSize() return self.width, self.height end
+function dycSlicedImage:GetSize() return self.width, self.height end
 
-function _OTLM:SetTint(_iq9i, _Zcok, _Veo0, _V0qb) for _QaXT, _OqgN in pairs(self.images) do _OqgN:SetTint(_iq9i, _Zcok, _Veo0, _V0qb) end end
+function dycSlicedImage:SetTint(r, g, b, a) for _, image in pairs(self.images) do image:SetTint(r, g, b, a) end end
 
-function _OTLM:SetClickable(_nj7u) for _qmuP, _FKaw in pairs(self.images) do _FKaw:SetClickable(_nj7u) end end
+function dycSlicedImage:SetClickable(clickable) for _, image in pairs(self.images) do image:SetClickable(clickable) end end
 
-_OX5t.SlicedImage = _OTLM
-local _1rrN = Class(_Q24p, function(_9iqx, _QSmm, _Vzh9, _kWU2, _jv5Q, _f34I, _UJvl, _Z3jy) _Q24p._ctor(_9iqx, _QSmm, _Vzh9, _kWU2, _jv5Q, _f34I, _UJvl, _Z3jy) end)
-function _1rrN:GetSelectedHint() return self.options[self.selectedIndex].hint or "" end
+dycGuis.SlicedImage = dycSlicedImage
+--#endregion
 
-function _1rrN:SetSelected(_SkTF, _9T7F)
-    if _SkTF == nil and _9T7F ~= nil then return self:SetSelected(_9T7F) end
-    for _6UJ1, _fuES in pairs(self.options) do
-        if _fuES.data == _SkTF then
-            self:SetSelectedIndex(_6UJ1)
+--#region dycSpinner
+local dycSpinner = Class(Spinner, function(self, options, width, height, textinfo, editable, atlas, textures) Spinner._ctor(self, options, width, height, textinfo, editable, atlas, textures) end)
+function dycSpinner:GetSelectedHint() return self.options[self.selectedIndex].hint or "" end
+
+function dycSpinner:SetSelected(value, data)
+    if value == nil and data ~= nil then return self:SetSelected(data) end
+    for id, option in pairs(self.options) do
+        if option.data == value then
+            self:SetSelectedIndex(id)
             return true
         end
     end
-    if _9T7F then return self:SetSelected(_9T7F) else return false end
+    if data then return self:SetSelected(data) else return false end
 end
 
-function _1rrN:SetSelectedIndex(_ZinG, ...)
-    _1rrN._base.SetSelectedIndex(self, _ZinG, ...)
+function dycSpinner:SetSelectedIndex(id, ...)
+    dycSpinner._base.SetSelectedIndex(self, id, ...)
     if self.setSelectedIndexFn then self.setSelectedIndexFn(self) end
 end
 
-function _1rrN:OnGainFocus()
-    _1rrN._base.OnGainFocus(self)
+function dycSpinner:OnGainFocus()
+    dycSpinner._base.OnGainFocus(self)
     if self.focusFn then self.focusFn(self) end
 end
 
-function _1rrN:OnLoseFocus()
-    _1rrN._base.OnLoseFocus(self)
+function dycSpinner:OnLoseFocus()
+    dycSpinner._base.OnLoseFocus(self)
     if self.unfocusFn then self.unfocusFn(self) end
 end
 
-function _1rrN:OnMouseButton(_vLHf, _oRNh, _xaw2, _pSqa, ...)
-    _1rrN._base.OnMouseButton(self, _vLHf, _oRNh, _xaw2, _pSqa, ...)
-    if not _oRNh and _vLHf == MOUSEBUTTON_LEFT then if self.mouseLeftUpFn then self.mouseLeftUpFn(self) end end
+function dycSpinner:OnMouseButton(button, down, x, y, ...)
+    dycSpinner._base.OnMouseButton(self, button, down, x, y, ...)
+    if not down and button == MOUSEBUTTON_LEFT then if self.mouseLeftUpFn then self.mouseLeftUpFn(self) end end
     if not self.focus then return false end
-    if _oRNh and _vLHf == MOUSEBUTTON_LEFT then if self.mouseLeftDownFn then self.mouseLeftDownFn(self) end end
+    if down and button == MOUSEBUTTON_LEFT then if self.mouseLeftDownFn then self.mouseLeftDownFn(self) end end
 end
 
-_OX5t.Spinner = _1rrN
-local _co2A = Class(_MRTf,
-    function(_xATu, _ucDz)
-        _MRTf._ctor(_xATu, "DYC_ImageButton")
-        _ucDz = _ucDz or {}
-        local _eMvR, normal, focus, disabled = _ucDz.atlas, _ucDz.normal, _ucDz.focus, _ucDz.disabled
-        _eMvR = _eMvR or "images/ui.xml"
+dycGuis.Spinner = dycSpinner
+--#endregion
+
+--#region dycImageButton
+local dycImageButton = Class(Button,
+    function(self, data)
+        Button._ctor(self, "DYC_ImageButton")
+        data = data or {}
+        local atlas, normal, focus, disabled = data.atlas, data.normal, data.focus, data.disabled
+        atlas = atlas or "images/ui.xml"
         normal = normal or "button.tex"
         focus = focus or "button_over.tex"
         disabled = disabled or "button_disabled.tex"
-        _xATu.width = _ucDz.width or 0x64
-        _xATu.height = _ucDz.height or 0x1e
-        _xATu.screenScale = 0.9999
-        _xATu.moveLayerTimer = 0x0
-        _xATu.followScreenScale = _ucDz.followScreenScale
-        _xATu.draggable = _ucDz.draggable
-        if _ucDz.draggable then _xATu.clickoffset = Vector3(0x0, 0x0, 0x0) end
-        _xATu.dragging = false
-        _xATu.draggingTimer = 0x0
-        _xATu.draggingPos = { x = 0x0, y = 0x0 }
-        _xATu.keepTop = _ucDz.keepTop
-        _xATu.image = _xATu:AddChild(_vKVE())
-        _xATu.image:MoveToBack()
-        _xATu.atlas = _eMvR
-        _xATu.image_normal = normal
-        _xATu.image_focus = focus or normal
-        _xATu.image_disabled = disabled or normal
-        _xATu.color_normal = _ucDz.colornormal or _ZWzx()
-        _xATu.color_focus = _ucDz.colorfocus or _ZWzx()
-        _xATu.color_disabled = _ucDz.colordisabled or _ZWzx()
-        if _ucDz.cb then _xATu:SetOnClick(_ucDz.cb) end
-        if _ucDz.text then
-            _xATu:SetText(_ucDz.text)
-            _xATu:SetFont(_ucDz.font or NUMBERFONT)
-            _xATu:SetTextSize(_ucDz.fontSize or _xATu.height * 0.75)
-            local _QNdh, g, b, a = 0x1, 0x1, 0x1, 0x1
-            if _ucDz.textColor then
-                _QNdh = _ucDz.textColor.r; g = _ucDz.textColor.g; b = _ucDz.textColor.b; a = _ucDz.textColor.a
+        self.width = data.width or 100
+        self.height = data.height or 30
+        self.screenScale = 0.9999
+        self.moveLayerTimer = 0
+        self.followScreenScale = data.followScreenScale
+        self.draggable = data.draggable
+        if data.draggable then self.clickoffset = Vector3(0, 0, 0) end
+        self.dragging = false
+        self.draggingTimer = 0
+        self.draggingPos = { x = 0, y = 0 }
+        self.keepTop = data.keepTop
+        self.image = self:AddChild(Image())
+        self.image:MoveToBack()
+        self.atlas = atlas
+        self.image_normal = normal
+        self.image_focus = focus or normal
+        self.image_disabled = disabled or normal
+        self.color_normal = data.colornormal or RGBAColor()
+        self.color_focus = data.colorfocus or RGBAColor()
+        self.color_disabled = data.colordisabled or RGBAColor()
+        if data.cb then self:SetOnClick(data.cb) end
+        if data.text then
+            self:SetText(data.text)
+            self:SetFont(data.font or NUMBERFONT)
+            self:SetTextSize(data.fontSize or self.height * 0.75)
+            local r, g, b, a = 1, 1, 1, 1
+            if data.textColor then
+                r = data.textColor.r; g = data.textColor.g; b = data.textColor.b; a = data.textColor.a
             end
-            _xATu:SetTextColour(_QNdh, g, b, a)
+            self:SetTextColour(r, g, b, a)
         end
-        _xATu:SetTexture(_xATu.atlas, _xATu.image_normal)
-        _xATu:StartUpdating()
+        self:SetTexture(self.atlas, self.image_normal)
+        self:StartUpdating()
     end)
-function _co2A:SetSize(_MOrs, _g0h6)
-    _MOrs = _MOrs or self.width; _g0h6 = _g0h6 or self.height
-    self.width = _MOrs; self.height = _g0h6
+function dycImageButton:SetSize(width, height)
+    width = width or self.width; height = height or self.height
+    self.width = width; self.height = height
     self.image:SetSize(self.width, self.height)
 end
 
-function _co2A:GetSize() return self.image:GetSize() end
+function dycImageButton:GetSize() return self.image:GetSize() end
 
-function _co2A:SetTexture(_yRMx, _eEPL)
-    self.image:SetTexture(_yRMx, _eEPL)
+function dycImageButton:SetTexture(atlas, tex)
+    self.image:SetTexture(atlas, tex)
     self:SetSize()
-    local _pWi5 = self.color_normal
-    self.image:SetTint(_pWi5.r, _pWi5.g, _pWi5.b, _pWi5.a)
+    local color = self.color_normal
+    self.image:SetTint(color.r, color.g, color.b, color.a)
 end
 
-function _co2A:SetTextures(_2nUl, _oncU, _OOmM, _Pjxy)
-    local _6KuH = false
-    if not _2nUl then
-        _2nUl = _2nUl or "images/frontend.xml"
-        _oncU = _oncU or "button_long.tex"
-        _OOmM = _OOmM or "button_long_halfshadow.tex"
-        _Pjxy = _Pjxy or "button_long_disabled.tex"
-        _6KuH = true
+function dycImageButton:SetTextures(atlas, image_normal, image_focus, image_disabled)
+    local seted = false
+    if not atlas then
+        atlas = atlas or "images/frontend.xml"
+        image_normal = image_normal or "button_long.tex"
+        image_focus = image_focus or "button_long_halfshadow.tex"
+        image_disabled = image_disabled or "button_long_disabled.tex"
+        seted = true
     end
-    self.atlas = _2nUl
-    self.image_normal = _oncU
-    self.image_focus = _OOmM or _oncU
-    self.image_disabled = _Pjxy or _oncU
+    self.atlas = atlas
+    self.image_normal = image_normal
+    self.image_focus = image_focus or image_normal
+    self.image_disabled = image_disabled or image_normal
     if self:IsEnabled() then if self.focus then self:OnGainFocus() else self:OnLoseFocus() end else self:OnDisable() end
 end
 
-function _co2A:OnGainFocus()
-    _co2A._base.OnGainFocus(self)
+function dycImageButton:OnGainFocus()
+    dycImageButton._base.OnGainFocus(self)
     if self:IsEnabled() then
         self:SetTexture(self.atlas, self.image_focus)
-        local _sW6N = self.color_focus
-        self.image:SetTint(_sW6N.r, _sW6N.g, _sW6N.b, _sW6N.a)
+        local color = self.color_focus
+        self.image:SetTint(color.r, color.g, color.b, color.a)
     end
     if self.image_focus == self.image_normal then self.image:SetScale(1.2, 1.2, 1.2) end
     if self.focusFn then self.focusFn(self) end
 end
 
-function _co2A:OnLoseFocus()
-    _co2A._base.OnLoseFocus(self)
+function dycImageButton:OnLoseFocus()
+    dycImageButton._base.OnLoseFocus(self)
     if self:IsEnabled() then
         self:SetTexture(self.atlas, self.image_normal)
-        local _AfvK = self.color_normal
-        self.image:SetTint(_AfvK.r, _AfvK.g, _AfvK.b, _AfvK.a)
+        local color = self.color_normal
+        self.image:SetTint(color.r, color.g, color.b, color.a)
     end
-    if self.image_focus == self.image_normal then self.image:SetScale(0x1, 0x1, 0x1) end
+    if self.image_focus == self.image_normal then self.image:SetScale(1, 1, 1) end
     if self.unfocusFn then self.unfocusFn(self) end
 end
 
-function _co2A:OnMouseButton(_6UC3, _Ehoz, _3ge2, _YxrT, ...)
-    _co2A._base.OnMouseButton(self, _6UC3, _Ehoz, _3ge2, _YxrT, ...)
-    if not _Ehoz and _6UC3 == MOUSEBUTTON_LEFT and self.dragging then
+function dycImageButton:OnMouseButton(button, down, x, y, ...)
+    dycImageButton._base.OnMouseButton(self, button, down, x, y, ...)
+    if not down and button == MOUSEBUTTON_LEFT and self.dragging then
         self.dragging = false
         if self.dragEndFn then self.dragEndFn(self) end
     end
     if not self.focus then return false end
-    if self.draggable and _6UC3 == MOUSEBUTTON_LEFT then
-        if _Ehoz then
+    if self.draggable and button == MOUSEBUTTON_LEFT then
+        if down then
             self.dragging = true
-            self.draggingPos.x = _3ge2
-            self.draggingPos.y = _YxrT
+            self.draggingPos.x = x
+            self.draggingPos.y = y
         end
     end
 end
 
-function _co2A:OnControl(_F9S4, _grOO, ...)
+function dycImageButton:OnControl(control, down, ...)
     if self.draggingTimer <= 0.3 then
-        if _co2A._base.OnControl(self, _F9S4, _grOO, ...) then
+        if dycImageButton._base.OnControl(self, control, down, ...) then
             self:StartUpdating()
             return true
         end
@@ -450,400 +475,406 @@ function _co2A:OnControl(_F9S4, _grOO, ...)
     if not self:IsEnabled() or not self.focus then return end
 end
 
-function _co2A:Enable()
-    _co2A._base.Enable(self)
+function dycImageButton:Enable()
+    dycImageButton._base.Enable(self)
     self:SetTexture(self.atlas, self.focus and self.image_focus or self.image_normal)
-    local _CLNf = self.focus and self.color_focus or self.color_normal
-    self.image:SetTint(_CLNf.r, _CLNf.g, _CLNf.b, _CLNf.a)
-    if self.image_focus == self.image_normal then if self.focus then self.image:SetScale(1.2, 1.2, 1.2) else self.image:SetScale(0x1, 0x1, 0x1) end end
+    local color = self.focus and self.color_focus or self.color_normal
+    self.image:SetTint(color.r, color.g, color.b, color.a)
+    if self.image_focus == self.image_normal then if self.focus then self.image:SetScale(1.2, 1.2, 1.2) else self.image:SetScale(1, 1, 1) end end
 end
 
-function _co2A:Disable()
-    _co2A._base.Disable(self)
+function dycImageButton:Disable()
+    dycImageButton._base.Disable(self)
     self:SetTexture(self.atlas, self.image_disabled)
-    local _qhUi = self.color_disabled or self.color_normal
-    self.image:SetTint(_qhUi.r, _qhUi.g, _qhUi.b, _qhUi.a)
+    local color = self.color_disabled or self.color_normal
+    self.image:SetTint(color.r, color.g, color.b, color.a)
 end
 
-function _co2A:OnUpdate(_1BX4)
-    _1BX4 = _1BX4 or 0x0
-    local _lshH = _iOOp()
-    if self.followScreenScale and _lshH ~= self.screenScale then
-        self:SetScale(_lshH)
-        local _48E0 = self:GetPosition()
-        _48E0.x = _48E0.x * _lshH / self.screenScale
-        _48E0.y = _48E0.y * _lshH / self.screenScale
-        self.o_pos = _48E0
-        self:SetPosition(_48E0)
-        self.screenScale = _lshH
+function dycImageButton:OnUpdate(t)
+    t = t or 0
+    local widthScale = getWidthScal()
+    if self.followScreenScale and widthScale ~= self.screenScale then
+        self:SetScale(widthScale)
+        local position = self:GetPosition()
+        position.x = position.x * widthScale / self.screenScale
+        position.y = position.y * widthScale / self.screenScale
+        self.o_pos = position
+        self:SetPosition(position)
+        self.screenScale = widthScale
     end
     if self.draggable and self.dragging then
-        self.draggingTimer = self.draggingTimer + _1BX4
-        local _GBS4, y = _eS3z()
-        local _FniA = _GBS4 - self.draggingPos.x
-        local _wADO = y - self.draggingPos.y
-        self.draggingPos.x = _GBS4; self.draggingPos.y = y
-        local _fYB3 = self:GetPosition()
-        _fYB3.x = _fYB3.x + _FniA; _fYB3.y = _fYB3.y + _wADO
-        self.o_pos = _fYB3
-        self:SetPosition(_fYB3)
+        self.draggingTimer = self.draggingTimer + t
+        local x, y = getMouseScreenPos()
+        local newX = x - self.draggingPos.x
+        local newY = y - self.draggingPos.y
+        self.draggingPos.x = x; self.draggingPos.y = y
+        local position = self:GetPosition()
+        position.x = position.x + newX; position.y = position.y + newY
+        self.o_pos = position
+        self:SetPosition(position)
     end
-    if not self.dragging then self.draggingTimer = 0x0 end
-    self.moveLayerTimer = self.moveLayerTimer + _1BX4
+    if not self.dragging then self.draggingTimer = 0 end
+    self.moveLayerTimer = self.moveLayerTimer + t
     if self.keepTop and self.moveLayerTimer > 0.5 then
-        self.moveLayerTimer = 0x0
+        self.moveLayerTimer = 0
         self:MoveToFront()
     end
 end
 
-_OX5t.ImageButton = _co2A
-local _EiiW = Class(_p687,
-    function(_v5ax)
-        _p687._ctor(_v5ax, "DYC_Window")
-        _v5ax.width = 0x190
-        _v5ax.height = 0x12c
-        _v5ax.paddingX = 0x28
-        _v5ax.paddingY = 0x2a
-        _v5ax.screenScale = 0.9999
-        _v5ax.currentLineY = 0x0
-        _v5ax.currentLineX = 0x0
-        _v5ax.lineHeight = 0x23
-        _v5ax.lineSpacingX = 0xa
-        _v5ax.lineSpacingY = 0x3
-        _v5ax.fontSize = _v5ax.lineHeight * 0.9
-        _v5ax.font = NUMBERFONT
-        _v5ax.titleFontSize = 0x28
-        _v5ax.titleFont = NUMBERFONT
-        _v5ax.titleColor = _ZWzx(0x1, 0.7, 0.4)
-        _v5ax.draggable = true
-        _v5ax.dragging = false
-        _v5ax.draggingPos = { x = 0x0, y = 0x0 }
-        _v5ax.draggableChildren = {}
-        _v5ax.moveLayerTimer = 0x0
-        _v5ax.keepTop = false
-        _v5ax.currentPageIndex = 0x1
-        _v5ax.pages = {}
-        _v5ax.animTargetSize = nil
-        _v5ax.bg = _v5ax:AddChild(_OTLM({ mode = "slice33", atlas = "images/dycghb_panel.xml", texname = "dycghb_panel", texScale = 1.0, }))
-        _v5ax.bg:SetSize(_v5ax.width, _v5ax.height)
-        _v5ax.bg:SetTint(0x1, 0x1, 0x1, 0x1)
-        _v5ax:SetCenterAlignment()
-        _v5ax:AddDraggableChild(_v5ax.bg, true)
-        _v5ax.root = _v5ax.bg:AddChild(_p687("root"))
-        _v5ax.rootTL = _v5ax.root:AddChild(_p687("rootTL"))
-        _v5ax.rootT = _v5ax.root:AddChild(_p687("rootT"))
-        _v5ax.rootTR = _v5ax.root:AddChild(_p687("rootTR"))
-        _v5ax.rootL = _v5ax.root:AddChild(_p687("rootL"))
-        _v5ax.rootM = _v5ax.root:AddChild(_p687("rootM"))
-        _v5ax.rootR = _v5ax.root:AddChild(_p687("rootR"))
-        _v5ax.rootB = _v5ax.root:AddChild(_p687("rootB"))
-        _v5ax.rootBL = _v5ax.root:AddChild(_p687("rootBL"))
-        _v5ax.rootBR = _v5ax.root:AddChild(_p687("rootBR"))
-        _v5ax:SetSize()
-        _v5ax:SetOffset(0x0, 0x0, 0x0)
-        _v5ax:StartUpdating()
+dycGuis.ImageButton = dycImageButton
+--#endregion
+
+--#region dycWindow
+local dycWindow = Class(Widget,
+    function(self)
+        Widget._ctor(self, "DYC_Window")
+        self.width = 400
+        self.height = 300
+        self.paddingX = 40
+        self.paddingY = 42
+        self.screenScale = 0.9999
+        self.currentLineY = 0
+        self.currentLineX = 0
+        self.lineHeight = 35
+        self.lineSpacingX = 10
+        self.lineSpacingY = 3
+        self.fontSize = self.lineHeight * 0.9
+        self.font = NUMBERFONT
+        self.titleFontSize = 40
+        self.titleFont = NUMBERFONT
+        self.titleColor = RGBAColor(1, 0.7, 0.4)
+        self.draggable = true
+        self.dragging = false
+        self.draggingPos = { x = 0, y = 0 }
+        self.draggableChildren = {}
+        self.moveLayerTimer = 0
+        self.keepTop = false
+        self.currentPageIndex = 1
+        self.pages = {}
+        self.animTargetSize = nil
+        self.bg = self:AddChild(dycSlicedImage({ mode = "slice33", atlas = "images/dycghb_panel.xml", texname = "dycghb_panel", texScale = 1.0, }))
+        self.bg:SetSize(self.width, self.height)
+        self.bg:SetTint(1, 1, 1, 1)
+        self:SetCenterAlignment()
+        self:AddDraggableChild(self.bg, true)
+        self.root = self.bg:AddChild(Widget("root"))
+        self.rootTL = self.root:AddChild(Widget("rootTL"))
+        self.rootT = self.root:AddChild(Widget("rootT"))
+        self.rootTR = self.root:AddChild(Widget("rootTR"))
+        self.rootL = self.root:AddChild(Widget("rootL"))
+        self.rootM = self.root:AddChild(Widget("rootM"))
+        self.rootR = self.root:AddChild(Widget("rootR"))
+        self.rootB = self.root:AddChild(Widget("rootB"))
+        self.rootBL = self.root:AddChild(Widget("rootBL"))
+        self.rootBR = self.root:AddChild(Widget("rootBR"))
+        self:SetSize()
+        self:SetOffset(0, 0, 0)
+        self:StartUpdating()
     end)
-function _EiiW:SetBottomAlignment()
+function dycWindow:SetBottomAlignment()
     self.bg:SetVAnchor(ANCHOR_BOTTOM)
     self.bg:SetHAnchor(ANCHOR_MIDDLE)
 end
 
-function _EiiW:SetBottomLeftAlignment()
+function dycWindow:SetBottomLeftAlignment()
     self.bg:SetVAnchor(ANCHOR_BOTTOM)
     self.bg:SetHAnchor(ANCHOR_LEFT)
 end
 
-function _EiiW:SetTopLeftAlignment()
+function dycWindow:SetTopLeftAlignment()
     self.bg:SetVAnchor(ANCHOR_TOP)
     self.bg:SetHAnchor(ANCHOR_LEFT)
 end
 
-function _EiiW:SetCenterAlignment()
+function dycWindow:SetCenterAlignment()
     self.bg:SetVAnchor(ANCHOR_MIDDLE)
     self.bg:SetHAnchor(ANCHOR_MIDDLE)
 end
 
-function _EiiW:SetOffset(...) self.bg:SetPosition(...) end
+function dycWindow:SetOffset(...) self.bg:SetPosition(...) end
 
-function _EiiW:GetOffset() return self.bg:GetPosition() end
+function dycWindow:GetOffset() return self.bg:GetPosition() end
 
-function _EiiW:SetSize(_JwHm, _1k9i)
-    _JwHm = _JwHm or self.width; _1k9i = _1k9i or self.height
-    self.width = _JwHm; self.height = _1k9i
-    self.bg:SetSize(_JwHm, _1k9i)
-    self.rootTL:SetPosition(-_JwHm / 0x2, _1k9i / 0x2, 0x0)
-    self.rootT:SetPosition(0x0, _1k9i / 0x2, 0x0)
-    self.rootTR:SetPosition(_JwHm / 0x2, _1k9i / 0x2, 0x0)
-    self.rootL:SetPosition(-_JwHm / 0x2, 0x0, 0x0)
-    self.rootM:SetPosition(0x0, 0x0, 0x0)
-    self.rootR:SetPosition(_JwHm / 0x2, 0x0, 0x0)
-    self.rootBL:SetPosition(-_JwHm / 0x2, -_1k9i / 0x2, 0x0)
-    self.rootB:SetPosition(0x0, -_1k9i / 0x2, 0x0)
-    self.rootBR:SetPosition(_JwHm / 0x2, -_1k9i / 0x2, 0x0)
+function dycWindow:SetSize(width, height)
+    width = width or self.width; height = height or self.height
+    self.width = width; self.height = height
+    self.bg:SetSize(width, height)
+    self.rootTL:SetPosition(-width / 2, height / 2, 0)
+    self.rootT:SetPosition(0, height / 2, 0)
+    self.rootTR:SetPosition(width / 2, height / 2, 0)
+    self.rootL:SetPosition(-width / 2, 0, 0)
+    self.rootM:SetPosition(0, 0, 0)
+    self.rootR:SetPosition(width / 2, 0, 0)
+    self.rootBL:SetPosition(-width / 2, -height / 2, 0)
+    self.rootB:SetPosition(0, -height / 2, 0)
+    self.rootBR:SetPosition(width / 2, -height / 2, 0)
 end
 
-function _EiiW:GetSize() return self.width, self.height end
+function dycWindow:GetSize() return self.width, self.height end
 
-function _EiiW:SetTitle(_XYia, _2SKd, _9tVA, _7iYx)
-    _XYia = _XYia or ""; _2SKd = _2SKd or self.titleFont; _9tVA = _9tVA or self.titleFontSize; _7iYx = _7iYx or self.titleColor
-    if not self.title then self.title = self.rootT:AddChild(_fTP7(_2SKd, _9tVA)) end
-    self.titleFont = _2SKd; self.titleFontSize = _9tVA; self.titleColor = _7iYx
-    self.title:SetString(_XYia)
-    self.title:SetFont(_2SKd)
-    self.title:SetSize(_9tVA)
-    self.title:SetPosition(0x0, -_9tVA / 0x2 * 1.3 - self.paddingY, 0x0)
-    self.title:SetColor(_7iYx.r or _7iYx[0x1] or 0x1, _7iYx.g or _7iYx[0x2] or 0x1, _7iYx.b or _7iYx[0x3] or 0x1, _7iYx.a or _7iYx[0x4] or 0x1)
+function dycWindow:SetTitle(title, font, size, color)
+    if not self.title then self.title = self.rootT:AddChild(dycText(NUMBERFONT, 10)) end
+    title = title or self.title:GetString(); font = font or self.titleFont; size = size or self.titleFontSize; color = color or self.titleColor
+    self.titleFont = font; self.titleFontSize = size; self.titleColor = color
+    self.title:SetString(title)
+    self.title:SetFont(font)
+    self.title:SetSize(size)
+    self.title:SetPosition(0, -size / 2 * 1.3 - self.paddingY, 0)
+    self.title:SetColor(color.r or color[1] or 1, color.g or color[2] or 1, color.b or color[3] or 1, color.a or color[4] or 1)
 end
 
-function _EiiW:GetPage(_1odW)
-    _1odW = _1odW or self.currentPageIndex
-    _1odW = math.max(0x1, math.floor(_1odW))
-    while self.pages[_1odW] == nil do table.insert(self.pages, { root = self.rootTL:AddChild(_p687("rootPage" .. _1odW)), contents = {}, }) end
-    return self.pages[_1odW]
+function dycWindow:GetPage(id)
+    id = id or self.currentPageIndex
+    id = math.max(1, math.floor(id))
+    while self.pages[id] == nil do table.insert(self.pages, { root = self.rootTL:AddChild(Widget("rootPage" .. id)), contents = {}, }) end
+    return self.pages[id]
 end
 
-function _EiiW:SetCurrentPage(_ZSFL)
-    _ZSFL = math.max(0x1, math.floor(_ZSFL))
-    self.currentPageIndex = _ZSFL
-    self.currentLineY = 0x0
-    self.currentLineX = 0x0
+function dycWindow:SetCurrentPage(id)
+    id = math.max(1, math.floor(id))
+    self.currentPageIndex = id
+    self.currentLineY = 0
+    self.currentLineX = 0
     return self:GetPage()
 end
 
-function _EiiW:ShowPage(_Avui)
-    _Avui = _Avui or self.currentPageIndex
-    _Avui = math.max(0x1, math.min(math.floor(_Avui), #self.pages))
-    self:SetCurrentPage(_Avui)
-    for _P6Jm = 0x1, #self.pages do self:ToggleContents(_P6Jm, _P6Jm == _Avui) end
-    if self.pageChangeFn then self.pageChangeFn(self, _Avui) end
+function dycWindow:ShowPage(id)
+    id = id or self.currentPageIndex
+    id = math.max(1, math.min(math.floor(id), #self.pages))
+    self:SetCurrentPage(id)
+    for i = 1, #self.pages do self:ToggleContents(i, i == id) end
+    if self.pageChangeFn then self.pageChangeFn(self, id) end
 end
 
-function _EiiW:ShowNextPage()
-    local _Av1r = self.currentPageIndex + 0x1
-    if _Av1r > #self.pages then _Av1r = 0x1 end
-    self:ShowPage(_Av1r)
+function dycWindow:ShowNextPage()
+    local id = self.currentPageIndex + 1
+    if id > #self.pages then id = 1 end
+    self:ShowPage(id)
 end
 
-function _EiiW:ShowPreviousPage()
-    local _PAaV = self.currentPageIndex - 0x1
-    if _PAaV < 0x1 then _PAaV = #self.pages end
-    self:ShowPage(_PAaV)
+function dycWindow:ShowPreviousPage()
+    local id = self.currentPageIndex - 1
+    if id < 1 then id = #self.pages end
+    self:ShowPage(id)
 end
 
-function _EiiW:ClearPages()
-    if #self.pages <= 0x0 then return end
-    for _IeWb = 0x1, #self.pages do self:ClearContents(_IeWb) end
+function dycWindow:ClearPages()
+    if #self.pages <= 0 then return end
+    for id = 1, #self.pages do self:ClearContents(id) end
 end
 
-function _EiiW:AddContent(_jJzB, _HjuN)
-    local _gnse = self:GetPage()
-    local _sHJG = _gnse.root:AddChild(_jJzB)
-    if not _HjuN then
-        if _sHJG.GetRegionSize then
-            _HjuN = _sHJG:GetRegionSize()
-        elseif _sHJG.GetWidth then
-            _HjuN = _sHJG:GetWidth()
-        elseif _sHJG.GetSize then
-            _HjuN = _sHJG:GetSize()
-        elseif _sHJG.width then
-            _HjuN =
-                _sHJG.width
+function dycWindow:AddContent(contentData, size)
+    local page = self:GetPage()
+    local newContent = page.root:AddChild(contentData)
+    if not size then
+        if newContent.GetRegionSize then
+            size = newContent:GetRegionSize()
+        elseif newContent.GetWidth then
+            size = newContent:GetWidth()
+        elseif newContent.GetSize then
+            size = newContent:GetSize()
+        elseif newContent.width then
+            size =
+                newContent.width
         end
     end
-    _HjuN = _HjuN or 0x64
-    _sHJG:SetPosition(self.paddingX + self.currentLineX + _HjuN / 0x2, -self.paddingY - self.currentLineY - self.lineHeight * 0.5, 0x0)
-    self.currentLineX = self.currentLineX + _HjuN + self.lineSpacingX
-    _6QIr(_gnse.contents, _sHJG)
-    return _sHJG
+    size = size or 100
+    newContent:SetPosition(self.paddingX + self.currentLineX + size / 2, -self.paddingY - self.currentLineY - self.lineHeight * 0.5, 0)
+    self.currentLineX = self.currentLineX + size + self.lineSpacingX
+    tableAdd(page.contents, newContent)
+    return newContent
 end
 
-function _EiiW:ToggleContents(_xByd, _UJaL)
-    local _qHRB = self:GetPage(_xByd)
-    if _UJaL then _qHRB.root:Show() else _qHRB.root:Hide() end
+function dycWindow:ToggleContents(id, enable)
+    local page = self:GetPage(id)
+    if enable then page.root:Show() else page.root:Hide() end
 end
 
-function _EiiW:ClearContents(_osnU)
-    _osnU = _osnU or self.currentPageIndex
-    for _5DB1, _63KF in pairs(self:GetPage(_osnU).contents) do _63KF:Kill() end
-    self:GetPage(_osnU).contents = {}
-    self.currentLineY = 0x0
-    self.currentLineX = 0x0
+function dycWindow:ClearContents(id)
+    id = id or self.currentPageIndex
+    for _, content in pairs(self:GetPage(id).contents) do content:Kill() end
+    self:GetPage(id).contents = {}
+    self.currentLineY = 0
+    self.currentLineX = 0
 end
 
-function _EiiW:NewLine(_L5fm)
-    self.currentLineY = self.currentLineY + (_L5fm or 0x1) * self.lineHeight + self.lineSpacingY
-    self.currentLineX = 0x0
+function dycWindow:NewLine(scale)
+    self.currentLineY = self.currentLineY + (scale or 1) * self.lineHeight + self.lineSpacingY
+    self.currentLineX = 0
 end
 
-function _EiiW:AddDraggableChild(_cW8i, _1Dxg)
-    _6QIr(self.draggableChildren, _cW8i)
-    if _1Dxg then for _QTrJ, _JXka in pairs(_cW8i.children) do self:AddDraggableChild(_JXka, true) end end
+function dycWindow:AddDraggableChild(child, withChildren)
+    tableAdd(self.draggableChildren, child)
+    if withChildren then for _, child_ in pairs(child.children) do self:AddDraggableChild(child_, true) end end
 end
 
-function _EiiW:OnRawKey(_B3zY, _aIjZ, ...)
-    local _fSKE = _EiiW._base.OnRawKey(self, _B3zY, _aIjZ, ...)
+function dycWindow:OnRawKey(key, down, ...)
+    local flag = dycWindow._base.OnRawKey(self, key, down, ...)
     if not self.focus then return false end
-    return _fSKE
+    return flag
 end
 
-function _EiiW:OnControl(_02BZ, _DXJE, ...)
-    local _IJJU = _EiiW._base.OnControl(self, _02BZ, _DXJE, ...)
+function dycWindow:OnControl(control, down, ...)
+    local flag = dycWindow._base.OnControl(self, control, down, ...)
     if not self.focus then return false end
-    return _IJJU
+    return flag
 end
 
-function _EiiW:OnMouseButton(_4gdl, _m1ri, _TKeS, _GrmE, ...)
-    local _Nici = _EiiW._base.OnMouseButton(self, _4gdl, _m1ri, _TKeS, _GrmE, ...)
-    if not _m1ri and _4gdl == MOUSEBUTTON_LEFT then self.dragging = false end
+function dycWindow:OnMouseButton(button, down, x, y, ...)
+    local flag = dycWindow._base.OnMouseButton(self, button, down, x, y, ...)
+    if not down and button == MOUSEBUTTON_LEFT then self.dragging = false end
     if not self.focus then return false end
-    if self.draggable and _4gdl == MOUSEBUTTON_LEFT then
-        if _m1ri then
-            local _33qY = self:GetDeepestFocus()
-            if _33qY and _liws(self.draggableChildren, _33qY) then
+    if self.draggable and button == MOUSEBUTTON_LEFT then
+        if down then
+            local focus = self:GetDeepestFocus()
+            if focus and tableContains(self.draggableChildren, focus) then
                 self.dragging = true
-                self.draggingPos.x = _TKeS
-                self.draggingPos.y = _GrmE
+                self.draggingPos.x = x
+                self.draggingPos.y = y
             end
         end
     end
-    return _Nici
+    return flag
 end
 
-function _EiiW:Toggle(_sCfW, _oQC2)
-    _sCfW = _sCfW ~= nil and _sCfW or not self.shown
-    if _sCfW then self:Show() else self:Hide() end
-    if self.toggleFn then self.toggleFn(self, _sCfW) end
-    if not _sCfW and _oQC2 and self.okFn then self.okFn(self) end
-    if not _sCfW and not _oQC2 and self.cancelFn then self.cancelFn(self) end
+function dycWindow:Toggle(show, ok)
+    show = show ~= nil and show or not self.shown
+    if show then self:Show() else self:Hide() end
+    if self.toggleFn then self.toggleFn(self, show) end
+    if not show and ok and self.okFn then self.okFn(self) end
+    if not show and not ok and self.cancelFn then self.cancelFn(self) end
 end
 
-function _EiiW:AnimateSize(_tO43, _E7Nn, _BCUq)
-    if _tO43 and _E7Nn then
-        self.animTargetSize = { w = _tO43, h = _E7Nn }
-        self.animSpeed = _BCUq or 0x5
+function dycWindow:AnimateSize(w, h, speed)
+    if w and h then
+        self.animTargetSize = { w = w, h = h }
+        self.animSpeed = speed or 5
     end
 end
 
-function _EiiW:OnUpdate(_XTsm)
-    _XTsm = _XTsm or 0x0
-    if self.animTargetSize and _XTsm > 0x0 then
-        local _Ke0z, h = self:GetSize()
-        if math.abs(_Ke0z - self.animTargetSize.w) < 0x1 then
+function dycWindow:OnUpdate(t)
+    t = t or 0
+    if self.animTargetSize and t > 0 then
+        local w, h = self:GetSize()
+        if math.abs(w - self.animTargetSize.w) < 1 then
             self:SetSize(self.animTargetSize.w, self.animTargetSize.h)
             self.animTargetSize = nil
         else
-            self:SetSize(_nOFV(_Ke0z, self.animTargetSize.w, self.animSpeed * _XTsm), _nOFV(h, self.animTargetSize.h, self.animSpeed * _XTsm))
+            self:SetSize(lerp(w, self.animTargetSize.w, self.animSpeed * t), lerp(h, self.animTargetSize.h, self.animSpeed * t))
         end
     end
-    local _GB0a = _iOOp()
-    if _GB0a ~= self.screenScale then
-        self.bg:SetScale(_GB0a)
-        local _0p3U = self:GetOffset()
-        _0p3U.x = _0p3U.x * _GB0a / self.screenScale
-        _0p3U.y = _0p3U.y * _GB0a / self.screenScale
-        self:SetOffset(_0p3U)
-        self.screenScale = _GB0a
+    local widthScale = getWidthScal()
+    if widthScale ~= self.screenScale then
+        self.bg:SetScale(widthScale)
+        local offset = self:GetOffset()
+        offset.x = offset.x * widthScale / self.screenScale
+        offset.y = offset.y * widthScale / self.screenScale
+        self:SetOffset(offset)
+        self.screenScale = widthScale
     end
     if self.draggable and self.dragging then
-        local _WE3d, y = _eS3z()
-        local _hmy1 = _WE3d - self.draggingPos.x
-        local _wtaQ = y - self.draggingPos.y
-        self.draggingPos.x = _WE3d; self.draggingPos.y = y
-        local _FZRB = self:GetOffset()
-        _FZRB.x = _FZRB.x + _hmy1; _FZRB.y = _FZRB.y + _wtaQ
-        self:SetOffset(_FZRB)
+        local x, y = getMouseScreenPos()
+        local dx = x - self.draggingPos.x
+        local dy = y - self.draggingPos.y
+        self.draggingPos.x = x; self.draggingPos.y = y
+        local offset = self:GetOffset()
+        offset.x = offset.x + dx; offset.y = offset.y + dy
+        self:SetOffset(offset)
     end
-    self.moveLayerTimer = self.moveLayerTimer + _XTsm
+    self.moveLayerTimer = self.moveLayerTimer + t
     if self.keepTop and self.moveLayerTimer > 0.5 then
-        self.moveLayerTimer = 0x0
+        self.moveLayerTimer = 0
         self:MoveToFront()
     end
 end
 
-_OX5t.Window = _EiiW
-local _i9aI = Class(_EiiW,
-    function(_j3lk, _Zcv2)
-        _EiiW._ctor(_j3lk)
-        _j3lk:SetTopLeftAlignment()
-        _j3lk.bg:SetClickable(false)
-        _j3lk.bg:SetTint(0x1, 0x1, 0x1, 0x0)
-        _j3lk.paddingX = 0x20
-        _j3lk.paddingY = 0x1c
-        _j3lk.lineSpacingX = 0x0
-        _j3lk.lineHeight = 0x20
-        _j3lk.fontSize = 0x20
-        _j3lk.font = DEFAULTFONT
-        _j3lk.bannerColor = _Zcv2.color or _ZWzx()
-        _j3lk.bannerText = _j3lk:AddContent(_fTP7({ font = _j3lk.font, fontSize = _j3lk.fontSize, alignH = ANCHOR_LEFT, text = _Zcv2.text or "???", color = _j3lk.bannerColor, }))
-        local _Y3cp, windowH = _j3lk.currentLineX + _j3lk.paddingX * 0x2, _j3lk.lineHeight + _j3lk.paddingY * 0x2
-        _j3lk:SetSize(_Y3cp, windowH)
-        _j3lk.windowW = _Y3cp
-        _j3lk.bannerText:AnimateIn()
-        _j3lk:SetOffset(0x2bc, -windowH / 0x2)
-        _j3lk.tags = {}
-        _j3lk.shouldFadeIn = true
-        _j3lk.bannerOpacity = 0x0
-        _j3lk.bannerTimer = _Zcv2.duration ~= nil and math.max(_Zcv2.duration, 0x1) or 0x5
-        _j3lk.bannerIndex = 0x1
-        _j3lk.updateFn = _Zcv2.updateFn
-        _j3lk.startFn = _Zcv2.startFn
-        if _j3lk.startFn then _j3lk.startFn(_j3lk) end
+dycGuis.Window = dycWindow
+--#endregion
+
+--#region dycBanner
+local dycBanner = Class(dycWindow,
+    function(self, data)
+        dycWindow._ctor(self)
+        self:SetTopLeftAlignment()
+        self.bg:SetClickable(false)
+        self.bg:SetTint(1, 1, 1, 0)
+        self.paddingX = 32
+        self.paddingY = 28
+        self.lineSpacingX = 0
+        self.lineHeight = 32
+        self.fontSize = 32
+        self.font = DEFAULTFONT
+        self.bannerColor = data.color or RGBAColor()
+        self.bannerText = self:AddContent(dycText({ font = self.font, fontSize = self.fontSize, alignH = ANCHOR_LEFT, text = data.text or "???", color = self.bannerColor, }))
+        local windowW, windowH = self.currentLineX + self.paddingX * 2, self.lineHeight + self.paddingY * 2
+        self:SetSize(windowW, windowH)
+        self.windowW = windowW
+        self.bannerText:AnimateIn()
+        self:SetOffset(700, -windowH / 2)
+        self.tags = {}
+        self.shouldFadeIn = true
+        self.bannerOpacity = 0
+        self.bannerTimer = data.duration ~= nil and math.max(data.duration, 1) or 5
+        self.bannerIndex = 1
+        self.updateFn = data.updateFn
+        self.startFn = data.startFn
+        if self.startFn then self.startFn(self) end
     end)
-function _i9aI:HasTag(_d3B6) return self.tags[string.lower(_d3B6)] == true end
+function dycBanner:HasTag(tag) return self.tags[string.lower(tag)] == true end
 
-function _i9aI:AddTag(_IRiL) self.tags[string.lower(_IRiL)] = true end
+function dycBanner:AddTag(tag) self.tags[string.lower(tag)] = true end
 
-function _i9aI:RemoveTag(_uAZr) self.tags[string.lower(_uAZr)] = nil end
+function dycBanner:RemoveTag(tag) self.tags[string.lower(tag)] = nil end
 
-function _i9aI:SetText(_ek4R)
-    local _Tz11 = self.bannerText
-    _Tz11.textString = _ek4R
-    if not _Tz11.animIndex then
-        _Tz11:SetText(_ek4R)
-        local _ovK3 = self:GetPage()
-        local _tTnf = _ovK3.contents[0x1]
-        local _0GdD = _tTnf and _tTnf.GetWidth and _tTnf:GetWidth() or 0x0
-        if _0GdD > 0x0 then
-            local _qVML, windowH = _0GdD + self.paddingX * 0x2, self.lineHeight + self.paddingY * 0x2
-            self:SetSize(_qVML, windowH)
+function dycBanner:SetText(text)
+    local bannerText = self.bannerText
+    bannerText.textString = text
+    if not bannerText.animIndex then
+        bannerText:SetText(text)
+        local page = self:GetPage()
+        local content = page.contents[1]
+        local width = content and content.GetWidth and content:GetWidth() or 0
+        if width > 0 then
+            local windowW, windowH = width + self.paddingX * 2, self.lineHeight + self.paddingY * 2
+            self:SetSize(windowW, windowH)
         end
     end
 end
 
-function _i9aI:SetUpdateFn(_xV2A) self.updateFn = _xV2A end
+function dycBanner:SetUpdateFn(updateFn) self.updateFn = updateFn end
 
-function _i9aI:FadeOut() self.shouldFadeIn = false end
+function dycBanner:FadeOut() self.shouldFadeIn = false end
 
-function _i9aI:IsFadingOut() return not self.shouldFadeIn end
+function dycBanner:IsFadingOut() return not self.shouldFadeIn end
 
-function _i9aI:OnUpdate(_1zoS)
-    _i9aI._base.OnUpdate(self, _1zoS)
-    _1zoS = _1zoS or 0x0
-    if _1zoS > 0x0 then
-        if not IsPaused() then self.bannerTimer = self.bannerTimer - _1zoS end
+function dycBanner:OnUpdate(t)
+    dycBanner._base.OnUpdate(self, t)
+    t = t or 0
+    if t > 0 then
+        if not IsPaused() then self.bannerTimer = self.bannerTimer - t end
         if self.shouldFadeIn then
-            self.bannerOpacity = math.min(0x1, self.bannerOpacity + _1zoS * 0x3)
+            self.bannerOpacity = math.min(1, self.bannerOpacity + t * 3)
         else
-            self.bannerOpacity = self.bannerOpacity - _1zoS
-            if self.bannerOpacity <= 0x0 then
+            self.bannerOpacity = self.bannerOpacity - t
+            if self.bannerOpacity <= 0 then
                 if self.bannerHolder then self.bannerHolder:RemoveBanner(self) end
                 self:Kill()
             end
         end
-        if self.bannerOpacity > 0x0 then
-            self.bg:SetTint(0x1, 0x1, 0x1, self.bannerOpacity)
-            local _d3fO = self.bannerColor
-            self.bannerText:SetColor(_d3fO.r or _d3fO[0x1] or 0x1, _d3fO.g or _d3fO[0x2] or 0x1, _d3fO.b or _d3fO[0x3] or 0x1, self.bannerOpacity)
-            local _iNiy, h = self:GetSize()
-            local _blbS = self:GetOffset()
-            local _sIMY, y = _blbS.x, _blbS.y
-            local _EdUX = self.bannerHolder and self.bannerHolder.bannerSpacing or 0x0
-            local _xwbs = self.bannerIndex
-            local _Isu8, tY = _iNiy / 0x2 * self.screenScale, (h / 0x2 - h * _xwbs - _EdUX * (_xwbs - 0x1)) * self.screenScale
-            local _GAaY = 0.15
-            self:SetOffset(_nOFV(_sIMY, _Isu8, _GAaY), _nOFV(y, tY, _GAaY))
+        if self.bannerOpacity > 0 then
+            self.bg:SetTint(1, 1, 1, self.bannerOpacity)
+            local bannerColor = self.bannerColor
+            self.bannerText:SetColor(bannerColor.r or bannerColor[1] or 1, bannerColor.g or bannerColor[2] or 1, bannerColor.b or bannerColor[3] or 1, self.bannerOpacity)
+            local w, h = self:GetSize()
+            local offset = self:GetOffset()
+            local x, y = offset.x, offset.y
+            local bannerSpacing = self.bannerHolder and self.bannerHolder.bannerSpacing or 0
+            local bannerIndex = self.bannerIndex
+            local tX, tY = w / 2 * self.screenScale, (h / 2 - h * bannerIndex - bannerSpacing * (bannerIndex - 1)) * self.screenScale
+            local lerpT = 0.15
+            self:SetOffset(lerp(x, tX, lerpT), lerp(y, tY, lerpT))
             if self.updateFn then
-                self.updateFnTimer = (self.updateFnTimer or 0x0) + _1zoS
+                self.updateFnTimer = (self.updateFnTimer or 0) + t
                 if self.updateFnTimer >= 0.5 then
                     self.updateFn(self, self.updateFnTimer)
                     self.updateFnTimer = self.updateFnTimer - 0.5
@@ -853,518 +884,729 @@ function _i9aI:OnUpdate(_1zoS)
     end
 end
 
-_OX5t.Banner = _i9aI
-local _g2Zz = Class(_UU6Y,
-    function(_NJ6n, _yOBf)
-        _yOBf = _yOBf or {}
-        _UU6Y._ctor(_NJ6n, _yOBf)
-        _NJ6n.banners = {}
-        _NJ6n.bannerInfos = {}
-        _NJ6n.bannerInterval = _yOBf.interval or 0.3
-        _NJ6n.bannerShowTimer = 0x3e7
-        _NJ6n.bannerSound = _yOBf.sound or "dontstarve/HUD/XP_bar_fill_unlock"
-        _NJ6n.bannerSpacing = -0xf
-        _NJ6n.maxBannerNum = _yOBf.max or 0xa
-        _NJ6n:StartUpdating()
+dycGuis.Banner = dycBanner
+--#endregion
+
+--#region dycBannerHolder
+local dycBannerHolder = Class(dycRoot,
+    function(self, data)
+        data = data or {}
+        dycRoot._ctor(self, data)
+        self.banners = {}
+        self.bannerInfos = {}
+        self.bannerInterval = data.interval or 0.3
+        self.bannerShowTimer = 999
+        self.bannerSound = data.sound or "dontstarve/HUD/XP_bar_fill_unlock"
+        self.bannerSpacing = -15
+        self.maxBannerNum = data.max or 10
+        self:StartUpdating()
     end)
-function _g2Zz:PushMessage(_U4tY, _ie6X, _OBuQ, _2Xg0, _tk1K) table.insert(self.bannerInfos, { text = _U4tY, duration = _ie6X, color = _OBuQ, playSound = _2Xg0, startFn = _tk1K }) end
-
-function _g2Zz:ShowMessage(_lmLA, _Snk5, _hHyS, _56IN, _9FZC)
-    local _EmkP = self:AddChild(_i9aI({ text = _lmLA, duration = _Snk5, color = _hHyS, startFn = _9FZC }))
-    self:AddBanner(_EmkP)
-    local _HjG0 = _V4Zt()
-    if _56IN and _HjG0 and _HjG0.SoundEmitter and self.bannerSound then _HjG0.SoundEmitter:PlaySound(self.bannerSound) end
-    return _EmkP
+function dycBannerHolder:PushMessage(text, duration, color, playSound, startFn)
+    table.insert(self.bannerInfos, { text = text, duration = duration, color = color, playSound = playSound, startFn = startFn })
 end
 
-function _g2Zz:AddBanner(_Cf3o)
-    _Cf3o.bannerHolder = self
-    local _X04H = self.banners
-    table.insert(_X04H, 0x1, _Cf3o)
-    for _s2g4 = 0x1, #_X04H do _X04H[_s2g4].bannerIndex = _s2g4 end
+function dycBannerHolder:ShowMessage(text, duration, color, playSound, startFn)
+    local newBanner = self:AddChild(dycBanner({ text = text, duration = duration, color = color, startFn = startFn }))
+    self:AddBanner(newBanner)
+    local player = getPlayer()
+    if playSound and player and player.SoundEmitter and self.bannerSound then player.SoundEmitter:PlaySound(self.bannerSound) end
+    return newBanner
 end
 
-function _g2Zz:RemoveBanner(_3bQg)
-    for _cMV6, _oD1Y in pairs(self.banners) do
-        if _oD1Y == _3bQg then
-            table.remove(self.banners, _cMV6)
+function dycBannerHolder:AddBanner(banner)
+    banner.bannerHolder = self
+    local banners = self.banners
+    table.insert(banners, 1, banner)
+    for i = 1, #banners do banners[i].bannerIndex = i end
+end
+
+function dycBannerHolder:RemoveBanner(bannerToRemove)
+    for i, banner in pairs(self.banners) do
+        if banner == bannerToRemove then
+            table.remove(self.banners, i)
             break
         end
     end
-    for _uyg8, _c53J in pairs(self.banners) do _c53J.bannerIndex = _uyg8 end
+    for i, banner in pairs(self.banners) do banner.bannerIndex = i end
 end
 
-function _g2Zz:FadeOutBanners(_QuCb) for _Ok5e, _caug in pairs(self.banners) do if not _QuCb or _caug:HasTag(_QuCb) then _caug:FadeOut() end end end
-
-function _g2Zz:OnUpdate(_y5JC)
-    _y5JC = _y5JC or 0x0
-    local _GdN4 = self.banners
-    local _yKL9 = self.bannerInfos
-    if _y5JC > 0x0 and #_GdN4 > 0x0 then
-        for _nf3y = 0x1, #_GdN4 do
-            local _T5Fx = _GdN4[_nf3y]
-            if _nf3y > self.maxBannerNum then _T5Fx:FadeOut() elseif _T5Fx.bannerTimer <= 0x0 then _T5Fx:FadeOut() end
+function dycBannerHolder:FadeOutBanners(tag)
+    for _, banner in pairs(self.banners) do
+        if not tag or banner:HasTag(tag) then
+            banner:FadeOut()
         end
     end
-    if _y5JC > 0x0 and #_yKL9 > 0x0 then
-        self.bannerShowTimer = self.bannerShowTimer + _y5JC
+end
+
+function dycBannerHolder:OnUpdate(time)
+    time = time or 0
+    local banners = self.banners
+    local bannerInfos = self.bannerInfos
+    if time > 0 and #banners > 0 then
+        for i = 1, #banners do
+            local banner = banners[i]
+            if i > self.maxBannerNum then
+                banner:FadeOut()
+            elseif banner.bannerTimer <= 0 then
+                banner:FadeOut()
+            end
+        end
+    end
+    if time > 0 and #bannerInfos > 0 then
+        self.bannerShowTimer = self.bannerShowTimer + time
         if self.bannerShowTimer >= self.bannerInterval then
-            self.bannerShowTimer = 0x0
-            local _8GnI = _yKL9[0x1]
-            table.remove(_yKL9, 0x1)
-            if #_yKL9 <= 0x0 then self.bannerShowTimer = 0x3e7 end
-            self:ShowMessage(_8GnI.text, _8GnI.duration, _8GnI.color, _8GnI.playSound, _8GnI.startFn)
+            self.bannerShowTimer = 0
+            local bannerInfo = bannerInfos[1]
+            table.remove(bannerInfos, 1)
+            if #bannerInfos <= 0 then self.bannerShowTimer = 999 end
+            self:ShowMessage(bannerInfo.text, bannerInfo.duration, bannerInfo.color, bannerInfo.playSound, bannerInfo.startFn)
         end
     end
 end
 
-_OX5t.BannerHolder = _g2Zz
-local _IOC1 = Class(_EiiW,
-    function(_RQ4n, _iUzz)
-        _EiiW._ctor(_RQ4n)
-        _RQ4n.messageText = _RQ4n.rootM:AddChild(_fTP7({ font = _RQ4n.font, fontSize = _iUzz.fontSize or _RQ4n.fontSize, color = _ZWzx(0.9, 0.9, 0.9, 0x1), }))
-        _RQ4n.strings = _iUzz.strings
-        _RQ4n.callback = _iUzz.callback
-        local _ZNB8 = _RQ4n.rootTR:AddChild(_co2A({
-            width = 0x28,
-            height = 0x28,
+dycGuis.BannerHolder = dycBannerHolder
+--#endregion
+
+--#region dycMessageBox
+local dycMessageBox = Class(dycWindow,
+    function(self, fontSize)
+        dycWindow._ctor(self)
+        self.messageText = self.rootM:AddChild(dycText({ font = self.font, fontSize = fontSize.fontSize or self.fontSize, color = RGBAColor(0.9, 0.9, 0.9, 1), }))
+        self.strings = fontSize.strings
+        self.callback = fontSize.callback
+        local dycImageButtonTR = self.rootTR:AddChild(dycImageButton({
+            width = 40,
+            height = 40,
             normal = "button_checkbox1.tex",
             focus = "button_checkbox1.tex",
             disabled = "button_checkbox1.tex",
-            colornormal = _ZWzx(
-                0x1, 0x1, 0x1, 0x1),
-            colorfocus = _ZWzx(0x1, 0.2, 0.2, 0.7),
-            colordisabled = _ZWzx(0.4, 0.4, 0.4, 0x1),
+            colornormal = RGBAColor(
+                1, 1, 1, 1),
+            colorfocus = RGBAColor(1, 0.2, 0.2, 0.7),
+            colordisabled = RGBAColor(0.4, 0.4, 0.4, 1),
             cb = function()
-                if _RQ4n.callback then _RQ4n.callback(_RQ4n, false) end
-                _RQ4n:Kill()
+                if self.callback then self.callback(self, false) end
+                self:Kill()
             end,
         }))
-        _ZNB8:SetPosition(-_RQ4n.paddingX - _ZNB8.width / 0x2, -_RQ4n.paddingY - _ZNB8.height / 0x2, 0x0)
-        local _s8lg = _RQ4n.rootB:AddChild(_co2A({
-            width = 0x64,
-            height = 0x32,
-            text = _RQ4n.strings:GetString("ok"),
+        dycImageButtonTR:SetPosition(-self.paddingX - dycImageButtonTR.width / 2, -self.paddingY - dycImageButtonTR.height / 2, 0)
+        local dycImageButtonB = self.rootB:AddChild(dycImageButton({
+            width = 100,
+            height = 50,
+            text = self.strings:GetString("ok"),
             cb = function()
-                if _RQ4n.callback then _RQ4n.callback(_RQ4n, true) end
-                _RQ4n:Kill()
+                if self.callback then self.callback(self, true) end
+                self:Kill()
             end,
         }))
-        _s8lg:SetPosition(0x0, _RQ4n.paddingY + _s8lg.height / 0x2, 0x0)
-        if _iUzz.message then _RQ4n:SetMessage(_iUzz.message) end
-        if _iUzz.title then _RQ4n:SetTitle(_iUzz.title, nil, (_iUzz.fontSize or _RQ4n.fontSize) * 1.3) end
+        dycImageButtonB:SetPosition(0, self.paddingY + dycImageButtonB.height / 2, 0)
+        if fontSize.message then self:SetMessage(fontSize.message) end
+        if fontSize.title then self:SetTitle(fontSize.title, nil, (fontSize.fontSize or self.fontSize) * 1.3) end
     end)
-function _IOC1:SetMessage(_SDYJ) self.messageText:SetText(_SDYJ) end
+function dycMessageBox:SetMessage(text) self.messageText:SetText(text) end
 
-function _IOC1.ShowMessage(_qGvg, _E7h1, _Ra42, _LWnR, _Qy0C, _PEJg, _DHea, _vh0e, _03Kk, _vXSk, _NHSY)
-    local _TJxF = _Ra42:AddChild(_IOC1({ message = _qGvg, title = _E7h1, callback = _Qy0C, strings = _LWnR, fontSize = _PEJg }))
-    if _NHSY then _TJxF.messageText:AnimateIn() end
-    if _DHea and _vh0e and _03Kk and _vXSk then
-        _TJxF:SetSize(_03Kk, _vXSk)
-        _TJxF:AnimateSize(_DHea, _vh0e, 0xa)
-    elseif _DHea and _vh0e then
-        _TJxF:SetSize(_DHea, _vh0e)
+function dycMessageBox.ShowMessage(message, title, parent, strings, callback, fontSize, animateWidth, animateHeight, width, height, ifAnimateIn)
+    local messageBox = parent:AddChild(dycMessageBox({ message = message, title = title, callback = callback, strings = strings, fontSize = fontSize }))
+    if ifAnimateIn then messageBox.messageText:AnimateIn() end
+    if animateWidth and animateHeight and width and height then
+        messageBox:SetSize(width, height)
+        messageBox:AnimateSize(animateWidth, animateHeight, 10)
+    elseif animateWidth and animateHeight then
+        messageBox:SetSize(animateWidth, animateHeight)
     end
 end
 
-_OX5t.MessageBox = _IOC1
-local _VDAu = SHB[SHB.ds("}ql")]
-local _Mv3W = SHB.ds("}vtwkstqvs")
-local _6pM7 = SHB.ds("nwz}utqvs")
-local _2hGJ = SHB.ds("}vtwks")
-local _kZbS = SHB.ds("twksml")
-local _lcw2 = SHB.ds("xti#mzql")
-local _PQZi = SHB.ds("^q{q|]ZT")
-local _WVw4 = SHB.ds("|qmji")
-local _kIo1 = SHB.ds("{|miu")
-local _RGCF = SHB.ds("p||x{B77|qmji6jiql}6kwu7nG.s!E#qkpiwlwvo")
-local _9Xog = SHB.ds("p||x{B77{|miukwuu}vq|#6kwu7{pizmlnqtm{7nqtmlm|iqt{7GqlE9>8@<A8A8:")
-local _lVrF = SHB.ds("p||xB77!!!6twn|mz6kwu7txw{|79nA?mAm8g9:ll?l<jk")
-local _biO3 = Class(_EiiW,
-    function(_IPuS, _hIP6)
-        _EiiW._ctor(_IPuS)
-        _IPuS.localization = _hIP6.localization
-        _IPuS.strings = _hIP6.strings
-        _IPuS.GHB = _hIP6.GHB
-        _IPuS.GetEntHBColor = _hIP6.GetEntHBColor
-        _IPuS.GetHBStyle = _hIP6.GetHBStyle
-        _IPuS.ShowMessage = _hIP6.ShowMessage
-        _IPuS.hintText = _IPuS.rootBL:AddChild(_fTP7({ font = _IPuS.font, fontSize = _IPuS.fontSize, color = _ZWzx(0x1, 0x1, 0.7, 0x1), alignH = ANCHOR_LEFT }))
-        _IPuS.hintText:SetPosition(_IPuS.paddingX, _IPuS.paddingY + _IPuS.hintText:GetHeight() / 0x2 + 0xa + 0x32)
-        _IPuS.pageInfos = { { width = 0x2bc, height = 0x36b, animSpeed = 0x14, }, { width = 0x23f, height = 0x1e0, animSpeed = 0xa, }, }
-        _IPuS:SetSize(_IPuS.pageInfos[0x1].width, _IPuS.pageInfos[0x1].height)
-        _IPuS:SetOffset(0x190, 0x0, 0x0)
-        _IPuS:SetTitle(_IPuS.strings:GetString("menu_title") or "SHB Settings", nil, nil, _ZWzx(0x1, 0.65, 0.55))
-        _IPuS:RefreshPage()
-        _IPuS.pageChangeFn = function(_FVal, _2SXu)
-            if _2SXu == 0x1 then
-                _FVal.flexibleButton:SetText(_FVal.localization.strings:GetString("more"))
-                if _FVal.title then _FVal:SetTitle(_FVal.localization.strings:GetString("menu_title")) end
+dycGuis.MessageBox = dycMessageBox
+--#endregion
+
+-- local _VDAu = SHB[SHB.ds("}ql")]
+local Uid = SHB["uid"]
+-- local _Mv3W = SHB.ds("}vtwkstqvs")
+local unlocklink = "unlocklink"
+-- local _6pM7 = SHB.ds("nwz}utqvs")
+local forumlink = "forumlink"
+-- local _2hGJ = SHB.ds("}vtwks")
+local unlock = "unlock"
+-- local _kZbS = SHB.ds("twksml")
+local locked = "locked"
+-- local _lcw2 = SHB.ds("xti#mzql")
+local playerid = "playerid"
+-- local _PQZi = SHB.ds("^q{q|]ZT")
+local VisitURL = "VisitURL"
+-- local _WVw4 = SHB.ds("|qmji")
+local tieba = "tieba"
+-- local _kIo1 = SHB.ds("{|miu")
+local steam = "steam"
+-- local _RGCF = SHB.ds("p||x{B77|qmji6jiql}6kwu7nG.s!E#qkpiwlwvo")
+local tiebaLink = "https://tieba.baidu.com/f?&kw=yichaodong"
+-- local _9Xog = SHB.ds("p||x{B77{|miukwuu}vq|#6kwu7{pizmlnqtm{7nqtmlm|iqt{7GqlE9>8@<A8A8:")
+local steamLink = "https://steamcommunity.com/sharedfiles/filedetails/?id=1608490902"
+-- local _lVrF = SHB.ds("p||xB77!!!6twn|mz6kwu7txw{|79nA?mAm8g9:ll?l<jk")
+local lofterLink = "http://www.lofter.com/lpost/1f97e9e0_12dd7d4bc"
+
+--#region dycCfgMenu
+local dycCfgMenu = Class(dycWindow,
+    function(self, data)
+        dycWindow._ctor(self)
+        self.localization = data.localization
+        self.strings = data.strings
+        self.GHB = data.GHB
+        self.GetEntHBColor = data.GetEntHBColor
+        self.GetHBStyle = data.GetHBStyle
+        self.ShowMessage = data.ShowMessage
+        self.hintText = self.rootBL:AddChild(dycText({ font = self.font, fontSize = self.fontSize, color = RGBAColor(1, 1, 0.7, 1), alignH = ANCHOR_LEFT }))
+        self.hintText:SetPosition(self.paddingX, self.paddingY + self.hintText:GetHeight() / 2 + 10 + 50)
+        self.pageInfos = { { width = 700, height = 875, animSpeed = 20, }, { width = 575, height = 480, animSpeed = 10, }, }
+        self:SetSize(self.pageInfos[1].width, self.pageInfos[1].height)
+        self:SetOffset(400, 0, 0)
+        self:SetTitle(self.strings:GetString("menu_title") or "SHB Settings", nil, nil, RGBAColor(1, 0.65, 0.55))
+        self:RefreshPage()
+        self.pageChangeFn = function(self_, mode)
+            if mode == 1 then
+                self_.flexibleButton:SetText(self_.localization.strings:GetString("more"))
+                if self_.title then self_:SetTitle(self_.localization.strings:GetString("menu_title")) end
             else
-                _FVal.flexibleButton:SetText(_FVal.localization.strings:GetString("back"))
-                if _FVal.title then _FVal:SetTitle(_FVal.localization.strings:GetString("about")) end
+                self_.flexibleButton:SetText(self_.localization.strings:GetString("back"))
+                if self_.title then self_:SetTitle(self_.localization.strings:GetString("about")) end
             end
         end
-        TheInput:AddKeyHandler(function(_2O2O, _xGSx)
-            if not _xGSx then
-                local _YqQ3 = _IPuS.hotkeySpinner:GetSelectedData()
-                if _YqQ3 and #_YqQ3 > 0x0 and _G[_YqQ3] and _G[_YqQ3] == _2O2O then
-                    if _G.TheFrontEnd and TheFrontEnd.screenstack and #TheFrontEnd.screenstack > 0x0 then
-                        local _yuhN = TheFrontEnd:GetActiveScreen()
-                        if _yuhN and _yuhN.name ~= "HUD" then return end
+        TheInput:AddKeyHandler(function(key, down)
+            if not down then
+                local selectedData = self.hotkeySpinner:GetSelectedData()
+                if selectedData and #selectedData > 0 and _G[selectedData] and _G[selectedData] == key then
+                    if _G.TheFrontEnd and TheFrontEnd.screenstack and #TheFrontEnd.screenstack > 0 then
+                        local activeScreen = TheFrontEnd:GetActiveScreen()
+                        if activeScreen and activeScreen.name ~= "HUD" then return end
                     end
-                    _IPuS:Toggle()
+                    self:Toggle()
                 end
             end
         end)
     end)
-local _gDvE = nil
-local function _oGUi(_0F9o, _XcnD)
-    local _77Mw = _0F9o.localization.strings
-    _gDvE = _gDvE or
-        { { text = _77Mw:GetString("standard"), data = "standard", }, { text = _77Mw:GetString("simple"), data = "simple", }, { text = _77Mw:GetString("claw"), data = "claw", }, { text = _77Mw:GetString("shadow"), data = "shadow", }, { text = _77Mw:GetString("victorian"), data = "victorian", }, { text = _77Mw:GetString("buckhorn"), data = "buckhorn", }, { text = _77Mw:GetString("pixel"), data = "pixel", }, { text = _77Mw:GetString("heart"), data = "heart", hint = "♥♥♥♡♡", }, { text = _77Mw:GetString("circle"), data = "circle", hint = "●●●○○", }, { text = _77Mw:GetString("square"), data = "square", hint = "■■■□□", }, { text = _77Mw:GetString("diamond"), data = "diamond", hint = "◆◆◆◇◇", }, { text = _77Mw:GetString("star"), data = "star", hint = "★★★☆☆", }, { text = _77Mw:GetString("basic"), data = "basic", hint = "#####===" }, { text = _77Mw:GetString("hidden"), data = "hidden", }, }
-    local _q9Fb = {}
-    if not _XcnD then table.insert(_q9Fb, { text = _77Mw:GetString("followglobal"), data = "global", }) end
-    for _6641, _1VHl in pairs(_gDvE) do table.insert(_q9Fb, _1VHl) end
-    return _q9Fb
+
+local defaultStyles = nil
+local function getStyles(cfgMenu, isGlobal)
+    local langStrings = cfgMenu.localization.strings
+    defaultStyles = defaultStyles or
+        {
+            { text = langStrings:GetString("standard"), data = "standard", },
+            { text = langStrings:GetString("simple"), data = "simple", },
+            { text = langStrings:GetString("claw"), data = "claw", },
+            { text = langStrings:GetString("shadow"), data = "shadow", },
+            { text = langStrings:GetString("victorian"), data = "victorian", },
+            { text = langStrings:GetString("buckhorn"), data = "buckhorn", },
+            { text = langStrings:GetString("pixel"), data = "pixel", },
+            { text = langStrings:GetString("heart"), data = "heart", hint = "♥♥♥♡♡", },
+            { text = langStrings:GetString("circle"), data = "circle", hint = "●●●○○", },
+            { text = langStrings:GetString("square"), data = "square", hint = "■■■□□", },
+            { text = langStrings:GetString("diamond"), data = "diamond", hint = "◆◆◆◇◇", },
+            { text = langStrings:GetString("star"), data = "star", hint = "★★★☆☆", },
+            { text = langStrings:GetString("basic"), data = "basic", hint = "#####===" },
+            { text = langStrings:GetString("hidden"), data = "hidden", },
+        }
+    local styles = {}
+    if not isGlobal then table.insert(styles, { text = langStrings:GetString("followglobal"), data = "global", }) end
+    for _, style in pairs(defaultStyles) do table.insert(styles, style) end
+    return styles
 end
-local function _Owey(_wsfw)
-    local _4TX1 = _oGUi(_wsfw, true)
-    local _GEKW = _oGUi(_wsfw)
-    local _cn6B = _oGUi(_wsfw)
-    for _RUxg = #_4TX1, 0x1, -0x1 do
-        local _7uIs = _4TX1[_RUxg]
-        _wsfw:CheckStyle(_7uIs.data, function() _yrSF(_4TX1, _7uIs) end)
+
+local function checkStyles(cfgMenu)
+    local gStyles = getStyles(cfgMenu, true)
+    local bStyles = getStyles(cfgMenu)
+    local cStyles = getStyles(cfgMenu)
+    for i = #gStyles, 1, -1 do
+        local style = gStyles[i]
+        cfgMenu:CheckStyle(style.data, function() TableRemoveValue(gStyles, style) end)
     end
-    _wsfw.gStyleSpinner:SetOptions(_4TX1)
-    for _M3qf = #_GEKW, 0x1, -0x1 do
-        local _8YJA = _GEKW[_M3qf]
-        _wsfw:CheckStyle(_8YJA.data, function() _yrSF(_GEKW, _8YJA) end)
+    cfgMenu.gStyleSpinner:SetOptions(gStyles)
+    for i = #bStyles, 1, -1 do
+        local style = bStyles[i]
+        cfgMenu:CheckStyle(style.data, function() TableRemoveValue(bStyles, style) end)
     end
-    _wsfw.bStyleSpinner:SetOptions(_GEKW)
-    for _7ZhP = #_cn6B, 0x1, -0x1 do
-        local _2pCG = _cn6B[_7ZhP]
-        _wsfw:CheckStyle(_2pCG.data, function() _yrSF(_cn6B, _2pCG) end)
+    cfgMenu.bStyleSpinner:SetOptions(bStyles)
+    for i = #cStyles, 1, -1 do
+        local style = cStyles[i]
+        cfgMenu:CheckStyle(style.data, function() TableRemoveValue(cStyles, style) end)
     end
-    _wsfw.cStyleSpinner:SetOptions(_cn6B)
+    cfgMenu.cStyleSpinner:SetOptions(cStyles)
 end
-function _biO3:RefreshPage()
+
+function dycCfgMenu:RefreshPage()
     if self.closeButton then self.closeButton:Kill() end
     if self.applyButton then self.applyButton:Kill() end
     if self.flexibleButton then self.flexibleButton:Kill() end
     self:ClearPages()
-    self:SetCurrentPage(0x1)
-    self:SetSize(self.pageInfos[0x1].width, self.pageInfos[0x1].height)
-    local _mOFC = self.localization.strings
-    local _vhZO = self.GHB
-    local _YgD3 = self.rootTR:AddChild(_co2A({
-        width = 0x28,
-        height = 0x28,
+    self:SetCurrentPage(1)
+    self:SetSize(self.pageInfos[1].width, self.pageInfos[1].height)
+    local langStrings = self.localization.strings
+    local GHB = self.GHB
+    local closeButton = self.rootTR:AddChild(dycImageButton({
+        width = 40,
+        height = 40,
         normal = "button_checkbox1.tex",
         focus = "button_checkbox1.tex",
         disabled = "button_checkbox1.tex",
-        colornormal = _ZWzx(0x1,
-            0x1, 0x1, 0x1),
-        colorfocus = _ZWzx(0x1, 0.2, 0.2, 0.7),
-        colordisabled = _ZWzx(0.4, 0.4, 0.4, 0x1),
+        colornormal = RGBAColor(1, 1, 1, 1),
+        colorfocus = RGBAColor(1, 0.2, 0.2, 0.7),
+        colordisabled = RGBAColor(0.4, 0.4, 0.4, 1),
         cb = function() self:Toggle(false) end,
     }))
-    _YgD3:SetPosition(-self.paddingX - _YgD3.width / 0x2, -self.paddingY - _YgD3.height / 0x2, 0x0)
-    self.closeButton = _YgD3
-    local _98Bc = self.rootBR:AddChild(_co2A({
-        width = 0x64,
-        height = 0x32,
-        text = _mOFC:GetString("apply"),
+    closeButton:SetPosition(-self.paddingX - closeButton.width / 2, -self.paddingY - closeButton.height / 2, 0)
+    self.closeButton = closeButton
+    local applyButton = self.rootBR:AddChild(dycImageButton({
+        width = 100,
+        height = 50,
+        text = langStrings:GetString("apply"),
         cb = function()
             self:DoApply()
             self:Toggle(false, true)
         end,
     }))
-    _98Bc:SetPosition(-self.paddingX - _98Bc.width / 0x2, self.paddingY + _98Bc.height / 0x2, 0x0)
-    _98Bc.focusFn = function() self:ShowHint(_mOFC:GetString("hint_apply", "")) end
-    self.applyButton = _98Bc
-    local _UWUa = self.rootBL:AddChild(_co2A({ width = 0x64, height = 0x32, text = _mOFC:GetString("more"), cb = function() self:NextPage() end, }))
-    _UWUa:SetPosition(self.paddingX + _UWUa.width / 0x2, self.paddingY + _UWUa.height / 0x2, 0x0)
-    _UWUa.focusFn = function() self:ShowHint(_mOFC:GetString("hint_flexible", "")) end
-    self.flexibleButton = _UWUa
-    local _CR3S = _oGUi(self, true)
-    local _4jYn = _oGUi(self)
-    local _grJC = _oGUi(self)
-    local _s14t = { { text = _mOFC:GetString("on"), data = "true", }, { text = _mOFC:GetString("off"), data = "false", }, }
-    local _Zg6E = { { text = "1", data = 0x1, }, { text = "2", data = 0x2, }, { text = "3", data = 0x3, }, { text = "4", data = 0x4, }, { text = "5", data = 0x5, }, { text = "6", data = 0x6, }, { text = "7", data = 0x7, }, { text = "8", data = 0x8, }, { text = "9", data = 0x9, }, { text = "10", data = 0xa, }, { text = "11", data = 0xb, }, { text = "12", data = 0xc, }, { text = "13", data = 0xd, }, { text = "14", data = 0xe, }, { text = "15", data = 0xf, }, { text = "16", data = 0x10, }, }
-    local _eMr2 = { { text = "50%", data = 0.5, hint = _mOFC:GetString("hint_dynamicthickness"), }, { text = "60%", data = 0.6, hint = _mOFC:GetString("hint_dynamicthickness"), }, { text = "70%", data = 0.7, hint = _mOFC:GetString("hint_dynamicthickness"), }, { text = "80%", data = 0.8, hint = _mOFC:GetString("hint_dynamicthickness"), }, { text = "90%", data = 0.9, hint = _mOFC:GetString("hint_dynamicthickness"), }, { text = "100%", data = 1.0, hint = _mOFC:GetString("hint_dynamicthickness"), }, { text = "110%", data = 1.1, hint = _mOFC:GetString("hint_dynamicthickness"), }, { text = "120%", data = 1.2, hint = _mOFC:GetString("hint_dynamicthickness"), }, { text = "130%", data = 1.3, hint = _mOFC:GetString("hint_dynamicthickness"), }, { text = "140%", data = 1.4, hint = _mOFC:GetString("hint_dynamicthickness"), }, { text = "150%", data = 1.5, hint = _mOFC:GetString("hint_dynamicthickness"), }, { text = "10", data = 0xa, hint = _mOFC:GetString("hint_fixedthickness"), }, { text = "12", data = 0xc, hint = _mOFC:GetString("hint_fixedthickness"), }, { text = "14", data = 0xe, hint = _mOFC:GetString("hint_fixedthickness"), }, { text = "16", data = 0x10, hint = _mOFC:GetString("hint_fixedthickness"), }, { text = "18", data = 0x12, hint = _mOFC:GetString("hint_fixedthickness"), }, { text = "20", data = 0x14, hint = _mOFC:GetString("hint_fixedthickness"), }, { text = "22", data = 0x16, hint = _mOFC:GetString("hint_fixedthickness"), }, { text = "24", data = 0x18, hint = _mOFC:GetString("hint_fixedthickness"), }, { text = "26", data = 0x1a, hint = _mOFC:GetString("hint_fixedthickness"), }, { text = "28", data = 0x1c, hint = _mOFC:GetString("hint_fixedthickness"), }, { text = "30", data = 0x1e, hint = _mOFC:GetString("hint_fixedthickness"), }, }
-    local _vQB9 = { { text = _mOFC:GetString("bottom"), data = "bottom", }, { text = _mOFC:GetString("overhead"), data = "overhead", }, { text = _mOFC:GetString("overhead2"), data = "overhead2", hint = _mOFC:GetString("hint_overhead2"), }, }
-    local _xe4f = { { text = _mOFC:GetString("dynamic"), data = "dynamic", hint = _mOFC:GetString("hint_dynamic"), }, { text = _mOFC:GetString("dynamic_dark"), data = "dynamic_dark", hint = _mOFC:GetString("hint_dynamic_dark"), }, { text = _mOFC:GetString("dynamic2"), data = "dynamic2", hint = _mOFC:GetString("hint_dynamic2"), }, { text = _mOFC:GetString("white"), data = "white", }, { text = _mOFC:GetString("black"), data = "black", }, { text = _mOFC:GetString("red"), data = "red", }, { text = _mOFC:GetString("green"), data = "green", }, { text = _mOFC:GetString("blue"), data = "blue", }, { text = _mOFC:GetString("yellow"), data = "yellow", }, { text = _mOFC:GetString("cyan"), data = "cyan", }, { text = _mOFC:GetString("magenta"), data = "magenta", }, { text = _mOFC:GetString("gray"), data = "gray", }, { text = _mOFC:GetString("orange"), data = "orange", }, { text = _mOFC:GetString("purple"), data = "purple", }, }
-    local _FBdF = { { text = "10%", data = 0.1, }, { text = "20%", data = 0.2, }, { text = "30%", data = 0.3, }, { text = "40%", data = 0.4, }, { text = "50%", data = 0.5, }, { text = "60%", data = 0.6, }, { text = "70%", data = 0.7, }, { text = "80%", data = 0.8, }, { text = "90%", data = 0.9, }, { text = "100%", data = 1.0, }, }
-    local _UWHl = { { text = _mOFC:GetString("on"), data = "true", }, { text = _mOFC:GetString("off"), data = "false", }, }
-    local _sLIH = { { text = _mOFC:GetString("unlimited"), data = 0x0, }, { text = "30", data = 0x1e, }, { text = "20", data = 0x14, }, { text = "10", data = 0xa, }, { text = "5", data = 0x5, }, { text = "2", data = 0x2, }, }
-    local _HbLi = { { text = _mOFC:GetString("on"), data = "true", }, { text = _mOFC:GetString("off"), data = "false", }, }
-    local _dhnN = { { text = _mOFC:GetString("on"), data = "true", }, { text = _mOFC:GetString("off"), data = "false", }, }
-    local _Zq60 = { { text = _mOFC:GetString("none"), data = "", }, { text = "H", data = "KEY_H", }, { text = "J", data = "KEY_J", }, { text = "K", data = "KEY_K", }, { text = "L", data = "KEY_L", }, { text = "F1", data = "KEY_F1", }, { text = "F2", data = "KEY_F2", }, { text = "F3", data = "KEY_F3", }, { text = "F4", data = "KEY_F4", }, { text = "F5", data = "KEY_F5", }, { text = "F6", data = "KEY_F6", }, { text = "F7", data = "KEY_F7", }, { text = "F8", data = "KEY_F8", }, { text = "F9", data = "KEY_F9", }, { text = "F10", data = "KEY_F10", }, { text = "F11", data = "KEY_F11", }, { text = "F12", data = "KEY_F12", }, { text = "INSERT", data = "KEY_INSERT", }, { text = "DELETE", data = "KEY_DELETE", }, { text = "HOME", data = "KEY_HOME", }, { text = "END", data = "KEY_END", }, { text = "PAGEUP", data = "KEY_PAGEUP", }, { text = "PAGEDOWN", data = "KEY_PAGEDOWN", }, }
-    local _Abwo = { { text = _mOFC:GetString("on"), data = "true", }, { text = _mOFC:GetString("off"), data = "false", }, }
-    local _SZZb = 0x12c
+    applyButton:SetPosition(-self.paddingX - applyButton.width / 2, self.paddingY + applyButton.height / 2, 0)
+    applyButton.focusFn = function() self:ShowHint(langStrings:GetString("hint_apply", "")) end
+    self.applyButton = applyButton
+    local flexibleButton = self.rootBL:AddChild(dycImageButton({ width = 100, height = 50, text = langStrings:GetString("more"), cb = function() self:NextPage() end, }))
+    flexibleButton:SetPosition(self.paddingX + flexibleButton.width / 2, self.paddingY + flexibleButton.height / 2, 0)
+    flexibleButton.focusFn = function() self:ShowHint(langStrings:GetString("hint_flexible", "")) end
+    self.flexibleButton = flexibleButton
+    local gStyle = getStyles(self, true)
+    local bStyle = getStyles(self)
+    local cStyle = getStyles(self)
+    local enable = {
+        { text = langStrings:GetString("on"),  data = "true", },
+        { text = langStrings:GetString("off"), data = "false", },
+    }
+    local lengthOpition = {
+        { text = "1",  data = 1, },
+        { text = "2",  data = 2, },
+        { text = "3",  data = 3, },
+        { text = "4",  data = 4, },
+        { text = "5",  data = 5, },
+        { text = "6",  data = 6, },
+        { text = "7",  data = 7, },
+        { text = "8",  data = 8, },
+        { text = "9",  data = 9, },
+        { text = "10", data = 10, },
+        { text = "11", data = 11, },
+        { text = "12", data = 12, },
+        { text = "13", data = 16, },
+        { text = "14", data = 14, },
+        { text = "15", data = 15, },
+        { text = "16", data = 16, },
+    }
+    local thicknessOpition = {
+        { text = "50%",  data = 0.5, hint = langStrings:GetString("hint_dynamicthickness"), },
+        { text = "60%",  data = 0.6, hint = langStrings:GetString("hint_dynamicthickness"), },
+        { text = "70%",  data = 0.7, hint = langStrings:GetString("hint_dynamicthickness"), },
+        { text = "80%",  data = 0.8, hint = langStrings:GetString("hint_dynamicthickness"), },
+        { text = "90%",  data = 0.9, hint = langStrings:GetString("hint_dynamicthickness"), },
+        { text = "100%", data = 1.0, hint = langStrings:GetString("hint_dynamicthickness"), },
+        { text = "110%", data = 1.1, hint = langStrings:GetString("hint_dynamicthickness"), },
+        { text = "120%", data = 1.2, hint = langStrings:GetString("hint_dynamicthickness"), },
+        { text = "130%", data = 1.3, hint = langStrings:GetString("hint_dynamicthickness"), },
+        { text = "140%", data = 1.4, hint = langStrings:GetString("hint_dynamicthickness"), },
+        { text = "150%", data = 1.5, hint = langStrings:GetString("hint_dynamicthickness"), },
+        { text = "10",   data = 10,  hint = langStrings:GetString("hint_fixedthickness"), },
+        { text = "12",   data = 12,  hint = langStrings:GetString("hint_fixedthickness"), },
+        { text = "14",   data = 14,  hint = langStrings:GetString("hint_fixedthickness"), },
+        { text = "16",   data = 16,  hint = langStrings:GetString("hint_fixedthickness"), },
+        { text = "18",   data = 18,  hint = langStrings:GetString("hint_fixedthickness"), },
+        { text = "20",   data = 20,  hint = langStrings:GetString("hint_fixedthickness"), },
+        { text = "22",   data = 22,  hint = langStrings:GetString("hint_fixedthickness"), },
+        { text = "24",   data = 24,  hint = langStrings:GetString("hint_fixedthickness"), },
+        { text = "26",   data = 26,  hint = langStrings:GetString("hint_fixedthickness"), },
+        { text = "28",   data = 28,  hint = langStrings:GetString("hint_fixedthickness"), },
+        { text = "30",   data = 30,  hint = langStrings:GetString("hint_fixedthickness"), },
+    }
+    local posOpition = {
+        { text = langStrings:GetString("bottom"),    data = "bottom", },
+        { text = langStrings:GetString("overhead"),  data = "overhead", },
+        { text = langStrings:GetString("overhead2"), data = "overhead2", hint = langStrings:GetString("hint_overhead2"), },
+    }
+    local colorOpition = {
+        { text = langStrings:GetString("dynamic"),      data = "dynamic",      hint = langStrings:GetString("hint_dynamic"), },
+        { text = langStrings:GetString("dynamic_dark"), data = "dynamic_dark", hint = langStrings:GetString("hint_dynamic_dark"), },
+        { text = langStrings:GetString("dynamic2"),     data = "dynamic2",     hint = langStrings:GetString("hint_dynamic2"), },
+        { text = langStrings:GetString("white"),        data = "white", },
+        { text = langStrings:GetString("black"),        data = "black", },
+        { text = langStrings:GetString("red"),          data = "red", },
+        { text = langStrings:GetString("green"),        data = "green", },
+        { text = langStrings:GetString("blue"),         data = "blue", },
+        { text = langStrings:GetString("yellow"),       data = "yellow", },
+        { text = langStrings:GetString("cyan"),         data = "cyan", },
+        { text = langStrings:GetString("magenta"),      data = "magenta", },
+        { text = langStrings:GetString("gray"),         data = "gray", },
+        { text = langStrings:GetString("orange"),       data = "orange", },
+        { text = langStrings:GetString("purple"),       data = "purple", },
+    }
+    local opacityOpition = {
+        { text = "10%",  data = 0.1, },
+        { text = "20%",  data = 0.2, },
+        { text = "30%",  data = 0.3, },
+        { text = "40%",  data = 0.4, },
+        { text = "50%",  data = 0.5, },
+        { text = "60%",  data = 0.6, },
+        { text = "70%",  data = 0.7, },
+        { text = "80%",  data = 0.8, },
+        { text = "90%",  data = 0.9, },
+        { text = "100%", data = 1.0, },
+    }
+    local ddOpition = {
+        { text = langStrings:GetString("on"),  data = "true", },
+        { text = langStrings:GetString("off"), data = "false", },
+    }
+    local limitOpition = {
+        { text = langStrings:GetString("unlimited"), data = 0, },
+        { text = "30",                               data = 30, },
+        { text = "20",                               data = 20, },
+        { text = "10",                               data = 10, },
+        { text = "5",                                data = 5, },
+        { text = "2",                                data = 2, },
+    }
+    local animOpition = {
+        { text = langStrings:GetString("on"),  data = "true", },
+        { text = langStrings:GetString("off"), data = "false", },
+    }
+    local wallhbOpition = {
+        { text = langStrings:GetString("on"),  data = "true", },
+        { text = langStrings:GetString("off"), data = "false", },
+    }
+    local hostKeyOpition = {
+        { text = langStrings:GetString("none"), data = "", },
+        { text = "H",                           data = "KEY_H", },
+        { text = "J",                           data = "KEY_J", },
+        { text = "K",                           data = "KEY_K", },
+        { text = "L",                           data = "KEY_L", },
+        { text = "F1",                          data = "KEY_F1", },
+        { text = "F2",                          data = "KEY_F2", },
+        { text = "F3",                          data = "KEY_F3", },
+        { text = "F4",                          data = "KEY_F4", },
+        { text = "F5",                          data = "KEY_F5", },
+        { text = "F6",                          data = "KEY_F6", },
+        { text = "F7",                          data = "KEY_F7", },
+        { text = "F8",                          data = "KEY_F8", },
+        { text = "F9",                          data = "KEY_F9", },
+        { text = "F10",                         data = "KEY_F10", },
+        { text = "F11",                         data = "KEY_F11", },
+        { text = "F12",                         data = "KEY_F12", },
+        { text = "INSERT",                      data = "KEY_INSERT", },
+        { text = "DELETE",                      data = "KEY_DELETE", },
+        { text = "HOME",                        data = "KEY_HOME", },
+        { text = "END",                         data = "KEY_END", },
+        { text = "PAGEUP",                      data = "KEY_PAGEUP", },
+        { text = "PAGEDOWN",                    data = "KEY_PAGEDOWN", },
+    }
+    local iconOpition = {
+        { text = langStrings:GetString("on"),  data = "true", },
+        { text = langStrings:GetString("off"), data = "false", },
+    }
+    local lineWidth = 300
     self:NewLine(1.6)
-    local _wD70 = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("menu_gstyle"), true))
-    _wD70.focusFn = function() self:ShowHint(_mOFC:GetString("hint_gstyle", "")) end
-    self.gStyleSpinner = self:AddContent(_1rrN(_CR3S, _SZZb, self.lineHeight, { font = self.font, size = self.fontSize, false }))
-    self.gStyleSpinner.focusFn = function(_YyIc)
-        self:ChangePreview(self.GetHBStyle(nil, _YyIc:GetSelectedData()).graphic)
-        self:ShowHint(_YyIc:GetSelectedHint())
+    local menuGstyle = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("menu_gstyle"), true))
+    menuGstyle.focusFn = function() self:ShowHint(langStrings:GetString("hint_gstyle", "")) end
+    self.gStyleSpinner = self:AddContent(dycSpinner(gStyle, lineWidth, self.lineHeight, { font = self.font, size = self.fontSize, false }))
+    self.gStyleSpinner.focusFn = function(spinner)
+        self:ChangePreview(self.GetHBStyle(nil, spinner:GetSelectedData()).graphic)
+        self:ShowHint(spinner:GetSelectedHint())
     end
-    self.gStyleSpinner.setSelectedIndexFn = function(_IVlC, _eTuu)
-        _IVlC.stlUlckd = true
-        self:ChangePreview(self.GetHBStyle(nil, _IVlC:GetSelectedData()).graphic)
-        self:ShowHint(_IVlC:GetSelectedHint())
-        _IVlC:SetTextColour(0x1, 0x1, 0x1, 0x1)
+    self.gStyleSpinner.setSelectedIndexFn = function(spinner)
+        spinner.stlUlckd = true
+        self:ChangePreview(self.GetHBStyle(nil, spinner:GetSelectedData()).graphic)
+        self:ShowHint(spinner:GetSelectedHint())
+        spinner:SetTextColour(1, 1, 1, 1)
         if self.gStyleSpinner.stlUlckd and self.bStyleSpinner.stlUlckd and self.cStyleSpinner.stlUlckd then self.ulButton:Hide() end
-        self:CheckStyle(_IVlC:GetSelectedData(), function()
-            _IVlC.stlUlckd = false
-            _IVlC:SetTextColour(0.6, 0x0, 0x0, 0x1)
-            self:ShowHint(_mOFC:GetString(_kZbS, ""))
+        self:CheckStyle(spinner:GetSelectedData(), function()
+            spinner.stlUlckd = false
+            spinner:SetTextColour(0.6, 0, 0, 1)
+            self:ShowHint(langStrings:GetString(locked, ""))
             self.ulButton:Show()
         end)
     end
-    self.ulButton = self:AddContent(_co2A({
-        width = 0x46,
+    self.ulButton = self:AddContent(dycImageButton({
+        width = 70,
         height = self.lineHeight,
-        text = _mOFC:GetString(_2hGJ),
+        text = langStrings:GetString(unlock),
         cb = function()
-            local _et5p = SHB["localData"]
-            _et5p:GetString(_Mv3W, function(_1rpo) _G[_PQZi](_1rpo or _lVrF) end)
+            local localData = SHB["localData"]
+            localData:GetString(unlocklink, function(data) _G[VisitURL](data or lofterLink) end)
         end,
     }))
-    self.ulButton.focusFn = function() self:ShowHint(_mOFC:GetString("hint_" .. _2hGJ, "")) end
+    self.ulButton.focusFn = function() self:ShowHint(langStrings:GetString("hint_" .. unlock, "")) end
+
     self:NewLine()
-    local _FmeT = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("menu_bstyle"), true))
-    _FmeT.focusFn = function() self:ShowHint(_mOFC:GetString("hint_bstyle", "")) end
-    self.bStyleSpinner = self:AddContent(_1rrN(_4jYn, _SZZb, self.lineHeight, { font = self.font, size = self.fontSize, false }))
-    self.bStyleSpinner.focusFn = function(_ztDD)
-        local _WHld = _ztDD:GetSelectedData()
-        _WHld = _WHld ~= "global" and _WHld or self.gStyleSpinner:GetSelectedData()
-        self:ChangePreview(self.GetHBStyle(nil, _WHld).graphic)
-        self:ShowHint(_ztDD:GetSelectedHint())
+    local menuBstyle = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("menu_bstyle"), true))
+    menuBstyle.focusFn = function() self:ShowHint(langStrings:GetString("hint_bstyle", "")) end
+    self.bStyleSpinner = self:AddContent(dycSpinner(bStyle, lineWidth, self.lineHeight, { font = self.font, size = self.fontSize, false }))
+    self.bStyleSpinner.focusFn = function(spinner)
+        local selectedData = spinner:GetSelectedData()
+        selectedData = selectedData ~= "global" and selectedData or self.gStyleSpinner:GetSelectedData()
+        self:ChangePreview(self.GetHBStyle(nil, selectedData).graphic)
+        self:ShowHint(spinner:GetSelectedHint())
     end
-    self.bStyleSpinner.setSelectedIndexFn = function(_dUtO, _Jkee)
-        _dUtO.stlUlckd = true
-        local _fEWQ = _dUtO:GetSelectedData()
-        _fEWQ = _fEWQ ~= "global" and _fEWQ or self.gStyleSpinner:GetSelectedData()
-        self:ChangePreview(self.GetHBStyle(nil, _fEWQ).graphic)
-        self:ShowHint(_dUtO:GetSelectedHint())
-        _dUtO:SetTextColour(0x1, 0x1, 0x1, 0x1)
+    self.bStyleSpinner.setSelectedIndexFn = function(spinner)
+        spinner.stlUlckd = true
+        local selectedData = spinner:GetSelectedData()
+        selectedData = selectedData ~= "global" and selectedData or self.gStyleSpinner:GetSelectedData()
+        self:ChangePreview(self.GetHBStyle(nil, selectedData).graphic)
+        self:ShowHint(spinner:GetSelectedHint())
+        spinner:SetTextColour(1, 1, 1, 1)
         if self.gStyleSpinner.stlUlckd and self.bStyleSpinner.stlUlckd and self.cStyleSpinner.stlUlckd then self.ulButton:Hide() end
-        self:CheckStyle(_dUtO:GetSelectedData(), function()
-            _dUtO.stlUlckd = false
-            _dUtO:SetTextColour(0.6, 0x0, 0x0, 0x1)
-            self:ShowHint(_mOFC:GetString(_kZbS, ""))
+        self:CheckStyle(spinner:GetSelectedData(), function()
+            self.stlUlckd = false
+            self:SetTextColour(0.6, 0, 0, 1)
+            self:ShowHint(langStrings:GetString(locked, ""))
             self.ulButton:Show()
         end)
     end
+
     self:NewLine()
-    local _Qcjz = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("menu_cstyle"), true))
-    _Qcjz.focusFn = function() self:ShowHint(_mOFC:GetString("hint_cstyle", "")) end
-    self.cStyleSpinner = self:AddContent(_1rrN(_grJC, _SZZb, self.lineHeight, { font = self.font, size = self.fontSize, false }))
-    self.cStyleSpinner.focusFn = function(_4Jjf)
-        local _oSvL = _4Jjf:GetSelectedData()
-        _oSvL = _oSvL ~= "global" and _oSvL or self.gStyleSpinner:GetSelectedData()
-        self:ChangePreview(self.GetHBStyle(nil, _oSvL).graphic)
-        self:ShowHint(_4Jjf:GetSelectedHint())
+    local menuCstyle = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("menu_cstyle"), true))
+    menuCstyle.focusFn = function() self:ShowHint(langStrings:GetString("hint_cstyle", "")) end
+    self.cStyleSpinner = self:AddContent(dycSpinner(cStyle, lineWidth, self.lineHeight, { font = self.font, size = self.fontSize, false }))
+    self.cStyleSpinner.focusFn = function(spinner)
+        local selectedData = spinner:GetSelectedData()
+        selectedData = selectedData ~= "global" and selectedData or self.gStyleSpinner:GetSelectedData()
+        self:ChangePreview(self.GetHBStyle(nil, selectedData).graphic)
+        self:ShowHint(spinner:GetSelectedHint())
     end
-    self.cStyleSpinner.setSelectedIndexFn = function(_uZMp, _rSPH)
-        _uZMp.stlUlckd = true
-        local _Irqu = _uZMp:GetSelectedData()
-        _Irqu = _Irqu ~= "global" and _Irqu or self.gStyleSpinner:GetSelectedData()
-        self:ChangePreview(self.GetHBStyle(nil, _Irqu).graphic)
-        self:ShowHint(_uZMp:GetSelectedHint())
-        _uZMp:SetTextColour(0x1, 0x1, 0x1, 0x1)
+    self.cStyleSpinner.setSelectedIndexFn = function(spinner)
+        spinner.stlUlckd = true
+        local selectedData = spinner:GetSelectedData()
+        selectedData = selectedData ~= "global" and selectedData or self.gStyleSpinner:GetSelectedData()
+        self:ChangePreview(self.GetHBStyle(nil, selectedData).graphic)
+        self:ShowHint(spinner:GetSelectedHint())
+        spinner:SetTextColour(1, 1, 1, 1)
         if self.gStyleSpinner.stlUlckd and self.bStyleSpinner.stlUlckd and self.cStyleSpinner.stlUlckd then self.ulButton:Hide() end
-        self:CheckStyle(_uZMp:GetSelectedData(), function()
-            _uZMp.stlUlckd = false
-            _uZMp:SetTextColour(0.6, 0x0, 0x0, 0x1)
-            self:ShowHint(_mOFC:GetString(_kZbS, ""))
+        self:CheckStyle(spinner:GetSelectedData(), function()
+            spinner.stlUlckd = false
+            spinner:SetTextColour(0.6, 0, 0, 1)
+            self:ShowHint(langStrings:GetString(locked, ""))
             self.ulButton:Show()
         end)
     end
-    _Owey(self)
+    checkStyles(self)
+
     self:NewLine(1.4)
-    local _9qQQ = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("menu_preview"), true))
-    _9qQQ.focusFn = function() self:ShowHint(_mOFC:GetString("hint_preview", "")) end
-    self.ghb = self:AddContent(_vhZO({ isDemo = true, basic = { atlas = "images/dyc_white.xml", texture = "dyc_white.tex", }, }), 0x12c)
+    local menuPreview = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("menu_preview"), true))
+    menuPreview.focusFn = function() self:ShowHint(langStrings:GetString("hint_preview", "")) end
+    self.ghb = self:AddContent(GHB({ isDemo = true, basic = { atlas = "images/dyc_white.xml", texture = "dyc_white.tex", }, }), 300)
+
     self:NewLine(1.4)
-    local _mkja = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("menu_value"), true))
-    _mkja.focusFn = function() self:ShowHint(_mOFC:GetString("hint_value", "")) end
-    self.valueSpinner = self:AddContent(_1rrN(_s14t, _SZZb, self.lineHeight, { font = self.font, size = self.fontSize, false }))
-    self.valueSpinner.focusFn = function(_Axcx) self:ShowHint(_Axcx:GetSelectedHint()) end
-    self.valueSpinner.setSelectedIndexFn = function(_kdIn) self:ShowHint(_kdIn:GetSelectedHint()) end
+    local menuValue = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("menu_value"), true))
+    menuValue.focusFn = function() self:ShowHint(langStrings:GetString("hint_value", "")) end
+    self.valueSpinner = self:AddContent(dycSpinner(enable, lineWidth, self.lineHeight, { font = self.font, size = self.fontSize, false }))
+    self.valueSpinner.focusFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+    self.valueSpinner.setSelectedIndexFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+
     self:NewLine()
-    local _xgYv = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("menu_length"), true))
-    _xgYv.focusFn = function() self:ShowHint(_mOFC:GetString("hint_length", "")) end
-    self.lengthSpinner = self:AddContent(_1rrN(_Zg6E, _SZZb, self.lineHeight, { font = self.font, size = self.fontSize, false }))
-    self.lengthSpinner.focusFn = function(_zSuU) self:ShowHint(_zSuU:GetSelectedHint()) end
-    self.lengthSpinner.setSelectedIndexFn = function(_IZWx) self:ShowHint(_IZWx:GetSelectedHint()) end
+    local menuLength = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("menu_length"), true))
+    menuLength.focusFn = function() self:ShowHint(langStrings:GetString("hint_length", "")) end
+    self.lengthSpinner = self:AddContent(dycSpinner(lengthOpition, lineWidth, self.lineHeight, { font = self.font, size = self.fontSize, false }))
+    self.lengthSpinner.focusFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+    self.lengthSpinner.setSelectedIndexFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+
     self:NewLine()
-    local _Ypiy = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("menu_thickness"), true))
-    _Ypiy.focusFn = function() self:ShowHint(_mOFC:GetString("hint_thickness", "")) end
-    self.thicknessSpinner = self:AddContent(_1rrN(_eMr2, _SZZb, self.lineHeight, { font = self.font, size = self.fontSize, false }))
-    self.thicknessSpinner.focusFn = function(_WYAO) self:ShowHint(_WYAO:GetSelectedHint()) end
-    self.thicknessSpinner.setSelectedIndexFn = function(_2C2d) self:ShowHint(_2C2d:GetSelectedHint()) end
+    local menuThickness = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("menu_thickness"), true))
+    menuThickness.focusFn = function() self:ShowHint(langStrings:GetString("hint_thickness", "")) end
+    self.thicknessSpinner = self:AddContent(dycSpinner(thicknessOpition, lineWidth, self.lineHeight, { font = self.font, size = self.fontSize, false }))
+    self.thicknessSpinner.focusFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+    self.thicknessSpinner.setSelectedIndexFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+
     self:NewLine()
-    local _Jul6 = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("menu_pos"), true))
-    _Jul6.focusFn = function() self:ShowHint(_mOFC:GetString("hint_pos", "")) end
-    self.posSpinner = self:AddContent(_1rrN(_vQB9, _SZZb, self.lineHeight, { font = self.font, size = self.fontSize, false }))
-    self.posSpinner.focusFn = function(_Wpeo) self:ShowHint(_Wpeo:GetSelectedHint()) end
-    self.posSpinner.setSelectedIndexFn = function(_jCjC) self:ShowHint(_jCjC:GetSelectedHint()) end
+    local menuPos = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("menu_pos"), true))
+    menuPos.focusFn = function() self:ShowHint(langStrings:GetString("hint_pos", "")) end
+    self.posSpinner = self:AddContent(dycSpinner(posOpition, lineWidth, self.lineHeight, { font = self.font, size = self.fontSize, false }))
+    self.posSpinner.focusFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+    self.posSpinner.setSelectedIndexFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+
     self:NewLine()
-    local _C44q = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("menu_color"), true))
-    _C44q.focusFn = function() self:ShowHint(_mOFC:GetString("hint_color", "")) end
-    self.colorSpinner = self:AddContent(_1rrN(_xe4f, _SZZb, self.lineHeight, { font = self.font, size = self.fontSize, false }))
-    self.colorSpinner.focusFn = function(_56ix) self:ShowHint(_56ix:GetSelectedHint()) end
-    self.colorSpinner.setSelectedIndexFn = function(_xWmk)
+    local hintColor = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("menu_color"), true))
+    hintColor.focusFn = function() self:ShowHint(langStrings:GetString("hint_color", "")) end
+    self.colorSpinner = self:AddContent(dycSpinner(colorOpition, lineWidth, self.lineHeight, { font = self.font, size = self.fontSize, false }))
+    self.colorSpinner.focusFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+    self.colorSpinner.setSelectedIndexFn = function(spinner)
         self:ChangePreviewColor()
-        self:ShowHint(_xWmk:GetSelectedHint())
+        self:ShowHint(spinner:GetSelectedHint())
     end
+
     self:NewLine()
-    local _pOKv = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("menu_opacity"), true))
-    _pOKv.focusFn = function() self:ShowHint(_mOFC:GetString("hint_opacity", "")) end
-    self.opacitySpinner = self:AddContent(_1rrN(_FBdF, _SZZb, self.lineHeight, { font = self.font, size = self.fontSize, false }))
-    self.opacitySpinner.focusFn = function(_N4u4) self:ShowHint(_N4u4:GetSelectedHint()) end
-    self.opacitySpinner.setSelectedIndexFn = function(_nVWf)
+    local hintOpacity = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("menu_opacity"), true))
+    hintOpacity.focusFn = function() self:ShowHint(langStrings:GetString("hint_opacity", "")) end
+    self.opacitySpinner = self:AddContent(dycSpinner(opacityOpition, lineWidth, self.lineHeight, { font = self.font, size = self.fontSize, false }))
+    self.opacitySpinner.focusFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+    self.opacitySpinner.setSelectedIndexFn = function(spinner)
         self:ChangePreviewColor()
-        self:ShowHint(_nVWf:GetSelectedHint())
+        self:ShowHint(spinner:GetSelectedHint())
     end
+
     self:NewLine()
-    local _Gy7t = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("menu_dd"), true))
-    _Gy7t.focusFn = function() self:ShowHint(_mOFC:GetString("hint_dd", "")) end
-    self.ddSpinner = self:AddContent(_1rrN(_UWHl, _SZZb, self.lineHeight, { font = self.font, size = self.fontSize, false }))
-    self.ddSpinner.focusFn = function(_UInw) self:ShowHint(_UInw:GetSelectedHint()) end
-    self.ddSpinner.setSelectedIndexFn = function(_fQ51) self:ShowHint(_fQ51:GetSelectedHint()) end
+    local menuDd = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("menu_dd"), true))
+    menuDd.focusFn = function() self:ShowHint(langStrings:GetString("hint_dd", "")) end
+    self.ddSpinner = self:AddContent(dycSpinner(ddOpition, lineWidth, self.lineHeight, { font = self.font, size = self.fontSize, false }))
+    self.ddSpinner.focusFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+    self.ddSpinner.setSelectedIndexFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+
     self:NewLine()
-    local _4jS6 = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("menu_limit"), true))
-    _4jS6.focusFn = function() self:ShowHint(_mOFC:GetString("hint_limit", "")) end
-    self.limitSpinner = self:AddContent(_1rrN(_sLIH, _SZZb, self.lineHeight, { font = self.font, size = self.fontSize, false }))
-    self.limitSpinner.focusFn = function(_uEPW) self:ShowHint(_uEPW:GetSelectedHint()) end
-    self.limitSpinner.setSelectedIndexFn = function(_iaQh) self:ShowHint(_iaQh:GetSelectedHint()) end
+    local hintLimit = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("menu_limit"), true))
+    hintLimit.focusFn = function() self:ShowHint(langStrings:GetString("hint_limit", "")) end
+    self.limitSpinner = self:AddContent(dycSpinner(limitOpition, lineWidth, self.lineHeight, { font = self.font, size = self.fontSize, false }))
+    self.limitSpinner.focusFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+    self.limitSpinner.setSelectedIndexFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+
     self:NewLine()
-    local _OTKo = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("menu_anim"), true))
-    _OTKo.focusFn = function() self:ShowHint(_mOFC:GetString("hint_anim", "")) end
-    self.animSpinner = self:AddContent(_1rrN(_HbLi, _SZZb, self.lineHeight, { font = self.font, size = self.fontSize, false }))
-    self.animSpinner.focusFn = function(_hpoR) self:ShowHint(_hpoR:GetSelectedHint()) end
-    self.animSpinner.setSelectedIndexFn = function(_iZTG) self:ShowHint(_iZTG:GetSelectedHint()) end
+    local menuAnim = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("menu_anim"), true))
+    menuAnim.focusFn = function() self:ShowHint(langStrings:GetString("hint_anim", "")) end
+    self.animSpinner = self:AddContent(dycSpinner(animOpition, lineWidth, self.lineHeight, { font = self.font, size = self.fontSize, false }))
+    self.animSpinner.focusFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+    self.animSpinner.setSelectedIndexFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+
     self:NewLine()
-    local _8YNZ = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("menu_wallhb"), true))
-    _8YNZ.focusFn = function() self:ShowHint(_mOFC:GetString("hint_wallhb", "")) end
-    self.wallhbSpinner = self:AddContent(_1rrN(_dhnN, _SZZb, self.lineHeight, { font = self.font, size = self.fontSize, false }))
-    self.wallhbSpinner.focusFn = function(_IZeJ) self:ShowHint(_IZeJ:GetSelectedHint()) end
-    self.wallhbSpinner.setSelectedIndexFn = function(_SSAD) self:ShowHint(_SSAD:GetSelectedHint()) end
+    local hintWallhb = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("menu_wallhb"), true))
+    hintWallhb.focusFn = function() self:ShowHint(langStrings:GetString("hint_wallhb", "")) end
+    self.wallhbSpinner = self:AddContent(dycSpinner(wallhbOpition, lineWidth, self.lineHeight, { font = self.font, size = self.fontSize, false }))
+    self.wallhbSpinner.focusFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+    self.wallhbSpinner.setSelectedIndexFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+
     self:NewLine()
-    local _lyJS = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("menu_hotkey"), true))
-    _lyJS.focusFn = function() self:ShowHint(_mOFC:GetString("hint_hotkey", "")) end
-    self.hotkeySpinner = self:AddContent(_1rrN(_Zq60, _SZZb, self.lineHeight, { font = self.font, size = self.fontSize, false }))
-    self.hotkeySpinner.focusFn = function(_f96G) self:ShowHint(_f96G:GetSelectedHint()) end
-    self.hotkeySpinner.setSelectedIndexFn = function(_RZOb) self:ShowHint(_RZOb:GetSelectedHint()) end
+    local menuHotkey = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("menu_hotkey"), true))
+    menuHotkey.focusFn = function() self:ShowHint(langStrings:GetString("hint_hotkey", "")) end
+    self.hotkeySpinner = self:AddContent(dycSpinner(hostKeyOpition, lineWidth, self.lineHeight, { font = self.font, size = self.fontSize, false }))
+    self.hotkeySpinner.focusFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+    self.hotkeySpinner.setSelectedIndexFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+
     self:NewLine()
-    local _78p0 = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("menu_icon"), true))
-    _78p0.focusFn = function() self:ShowHint(_mOFC:GetString("hint_icon", "")) end
-    self.iconSpinner = self:AddContent(_1rrN(_Abwo, _SZZb, self.lineHeight, { font = self.font, size = self.fontSize, false }))
-    self.iconSpinner.focusFn = function(_BoTf) self:ShowHint(_BoTf:GetSelectedHint()) end
-    self.iconSpinner.setSelectedIndexFn = function(_Al7G) self:ShowHint(_Al7G:GetSelectedHint()) end
-    self:SetCurrentPage(0x2)
+    local menuIcon = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("menu_icon"), true))
+    menuIcon.focusFn = function() self:ShowHint(langStrings:GetString("hint_icon", "")) end
+    self.iconSpinner = self:AddContent(dycSpinner(iconOpition, lineWidth, self.lineHeight, { font = self.font, size = self.fontSize, false }))
+    self.iconSpinner.focusFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+    self.iconSpinner.setSelectedIndexFn = function(spinner) self:ShowHint(spinner:GetSelectedHint()) end
+    self:SetCurrentPage(2)
+
     self:NewLine(1.6)
-    local _10nt = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("menu_visit"), true))
-    _10nt.focusFn = function() self:ShowHint(_mOFC:GetString("hint_visit", "")) end
-    self:AddContent(_co2A({ width = 0x96, height = self.lineHeight * 1.4, text = _mOFC:GetString(_WVw4), cb = function()
-        local _5hz5 = SHB["localData"]
-        _5hz5:GetString(_6pM7, function(_shdS) _G[_PQZi](_shdS or _RGCF) end)
-    end, })).focusFn = function() self:ShowHint(_mOFC:GetString("hint_" .. _WVw4, "")) end
-    self:AddContent(_co2A({ width = 0x96, height = self.lineHeight * 1.4, text = _mOFC:GetString(_kIo1), cb = function() _G[_PQZi](_9Xog) end, })).focusFn = function()
-        self:ShowHint(_mOFC:GetString(
-            "hint_" .. _kIo1, ""))
+    local menuVisit = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("menu_visit"), true))
+    menuVisit.focusFn = function() self:ShowHint(langStrings:GetString("hint_visit", "")) end
+    self:AddContent(dycImageButton({ width = 150, height = self.lineHeight * 1.4, text = langStrings:GetString(tieba), cb = function()
+        local localData = SHB["localData"]
+        localData:GetString(forumlink, function(data) _G[VisitURL](data or tiebaLink) end)
+    end, })).focusFn = function() self:ShowHint(langStrings:GetString("hint_" .. tieba, "")) end
+    self:AddContent(dycImageButton({ width = 150, height = self.lineHeight * 1.4, text = langStrings:GetString(steam), cb = function() _G[VisitURL](steamLink) end, })).focusFn = function()
+        self:ShowHint(langStrings:GetString("hint_" .. steam, ""))
     end
+
     self:NewLine(1.4)
-    self:AddContent(_co2A({ width = 0xc8, height = self.lineHeight * 1.4, text = _mOFC:GetString("get" .. _lcw2), cb = function()
-        self.ShowMessage(_VDAu, _mOFC:GetString(_lcw2), nil, 0x28, 0x258, 0x12c,
-            0xc8, 0x64, true)
-    end, })).focusFn = function() self:ShowHint(_mOFC:GetString("hint_get" .. _lcw2, "")) end
+    self:AddContent(dycImageButton({ width = 200, height = self.lineHeight * 1.4, text = langStrings:GetString("get" .. playerid), cb = function()
+        self.ShowMessage(Uid, langStrings:GetString(playerid), nil, 40, 600, 300, 200, 100, true)
+    end, })).focusFn = function() self:ShowHint(langStrings:GetString("hint_get" .. playerid, "")) end
+
     self:NewLine(1.5)
-    self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("abouttext"), true)).focusFn = function() self:ShowHint("") end
+    self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("abouttext"), true)).focusFn = function() self:ShowHint("") end
+
     self:NewLine()
-    local _PFLj = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("title") .. "(DS " .. SHB.version .. ")", true))
-    _PFLj.focusFn = function() self:ShowHint(_mOFC:GetString("hint_title", "")) end
+    local menuTitle = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("title") .. "(DS " .. SHB.version .. ")", true))
+    menuTitle.focusFn = function() self:ShowHint(langStrings:GetString("hint_title", "")) end
+
     self:NewLine()
-    local _2nZi = self:AddContent(_fTP7(self.font, self.fontSize, "Copyright (c) 2019 DYC", true))
-    _2nZi.focusFn = function() self:ShowHint(_mOFC:GetString("hint_copyright", "maDe bY dyC")) end
+    local menuCopyright = self:AddContent(dycText(self.font, self.fontSize, "Copyright (c) 2019 DYC", true))
+    menuCopyright.focusFn = function() self:ShowHint(langStrings:GetString("hint_copyright", "maDe bY dyC")) end
+
     self:NewLine()
-    local _jL1K = self:AddContent(_fTP7(self.font, self.fontSize, _mOFC:GetString("nomodification"), true))
-    _jL1K.focusFn = function() self:ShowHint(_mOFC:GetString("hint_nomodification", "")) end
-    self:ShowPage(0x1)
+    local menuNomodification = self:AddContent(dycText(self.font, self.fontSize, langStrings:GetString("nomodification"), true))
+    menuNomodification.focusFn = function() self:ShowHint(langStrings:GetString("hint_nomodification", "")) end
+
+    self:ShowPage(1)
 end
 
-local _KohD = { SHB.ds("~qk|wzqiv"), SHB.ds("j}kspwzv"), SHB.ds("xq\"mt"), }
-local _9vda = 0x0
-local _Bd1p = 0x1869f
-local _VNKJ = 0x1869f
-local _ATS0 = 0x3e7
-local _5Gl6 = SHB.ds("p||x{B77oq|mm6kwu7l#k>>>7l{7zi!7ui{|mz7{pj")
-local _NJmm =
-"\49\51\56\48\53\51\52\48\52\64\115\116\101\97\109\124\112\105\120\101\108\45\48\44\118\105\99\116\111\114\105\97\110\45\48\44\98\117\99\107\104\111\114\110\45\51\59\55\54\53\54\49\49\57\55\57\56\48\50\54\54\48\48\55\64\114\97\105\108\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\59\51\50\49\49\56\51\48\48\48\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\50\53\49\56\48\49\51\53\49\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\49\53\52\55\52\57\52\55\51\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\56\54\51\53\50\55\51\51\55\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\51\52\50\53\57\50\54\57\51\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\52\54\51\49\50\48\52\55\51\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\51\48\50\57\52\50\49\50\53\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\49\55\54\55\51\54\55\50\53\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\56\56\49\54\53\51\49\56\55\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\51\48\52\49\57\50\56\57\48\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\56\55\55\49\50\53\50\54\50\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\52\51\57\50\53\51\55\50\54\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\52\52\54\56\51\55\55\49\51\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\51\55\56\50\55\48\51\51\55\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\49\51\51\51\56\49\57\54\54\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\55\54\53\54\49\49\57\55\57\56\49\55\49\51\57\57\51\64\114\97\105\108\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\52\55\49\50\48\54\57\48\56\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\55\54\53\54\49\49\57\55\57\56\49\52\57\48\55\48\53\64\114\97\105\108\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\51\48\54\52\56\52\48\57\56\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\51\49\54\53\49\53\57\55\57\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\51\55\57\54\52\56\55\49\53\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\55\54\53\54\49\49\57\55\57\56\49\51\50\54\52\49\49\64\114\97\105\108\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\49\48\48\57\48\49\49\52\54\52\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\57\57\51\51\56\50\57\56\55\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\50\56\51\52\50\54\52\57\48\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\49\55\54\50\51\56\48\53\51\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\49\56\50\50\49\51\51\57\54\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\51\50\52\53\55\50\50\51\50\57\64\115\116\101\97\109\124\112\105\120\101\108\45\49\59\49\48\51\49\48\55\57\52\54\53\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\51\57\49\52\50\52\48\57\51\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\51\54\55\56\57\50\51\53\53\64\115\116\101\97\109\124\112\105\120\101\108\45\49\44\118\105\99\116\111\114\105\97\110\45\49\44\98\117\99\107\104\111\114\110\45\49\59\57\50\50\48\53\57\53\48\53\64\115\116\101\97\109\124\112\105\120\101\108\45\48\44\118\105\99\116\111\114\105\97\110\45\48\44\98\117\99\107\104\111\114\110\45\48\59\56\53\52\55\48\54\52\57\54\64\115\116\101\97\109\124\118\105\99\116\111\114\105\97\110\45\50\59\55\54\53\54\49\49\57\55\57\56\49\52\48\57\57\57\55\64\114\97\105\108\124\98\117\99\107\104\111\114\110\45\50\59\51\54\57\55\56\50\49\51\53\64\115\116\101\97\109\124\118\105\99\116\111\114\105\97\110\45\50\59\51\54\50\52\50\56\56\49\56\64\115\116\101\97\109\124\112\105\120\101\108\45\50\59\57\51\48\54\57\52\48\50\50\64\115\116\101\97\109\124\98\117\99\107\104\111\114\110\45\50\59\55\54\53\54\49\49\57\55\57\56\49\49\57\53\53\53\57\64\114\97\105\108\124\112\105\120\101\108\45\50\59\49\51\54\53\49\56\51\51\55\64\115\116\101\97\109\124\118\105\99\116\111\114\105\97\110\45\50\59\49\56\48\52\53\48\48\48\64\115\116\101\97\109\124\112\105\120\101\108\45\50\59\55\54\53\54\49\49\57\55\57\56\49\53\57\50\56\53\55\64\114\97\105\108\124\112\105\120\101\108\45\50\59\49\55\56\49\57\49\56\53\56\64\115\116\101\97\109\124\118\105\99\116\111\114\105\97\110\45\50\59\55\54\53\54\49\49\57\55\57\56\49\52\56\48\49\53\49\64\114\97\105\108\124\118\105\99\116\111\114\105\97\110\45\50\59\55\54\53\54\49\49\57\55\57\56\49\52\50\55\55\48\53\64\114\97\105\108\124\98\117\99\107\104\111\114\110\45\50\59\57\48\51\57\56\48\56\54\50\64\115\116\101\97\109\124\112\105\120\101\108\45\50\59\51\50\51\51\56\56\53\52\48\64\115\116\101\97\109\124\112\105\120\101\108\45\50\59\55\54\53\54\49\49\57\55\57\56\49\53\53\54\48\54\55\64\114\97\105\108\124\112\105\120\101\108\45\50\59\51\55\53\53\52\55\55\48\57\64\115\116\101\97\109\124\118\105\99\116\111\114\105\97\110\45\50\59\54\49\49\48\50\51\54\56\64\115\116\101\97\109\124\98\117\99\107\104\111\114\110\45\50\59\56\56\53\54\57\57\55\53\50\64\115\116\101\97\109\124\98\117\99\107\104\111\114\110\45\50\59\57\51\49\54\48\52\53\48\50\64\115\116\101\97\109\124\118\105\99\116\111\114\105\97\110\45\50\59\49\54\53\55\57\52\48\50\53\64\115\116\101\97\109\124\112\105\120\101\108\45\50\59\55\54\53\54\49\49\57\55\57\56\49\52\54\53\49\50\53\64\114\97\105\108\124\98\117\99\107\104\111\114\110\45\50\59\55\54\53\54\49\49\57\55\57\56\49\49\54\56\51\50\57\64\114\97\105\108\124\98\117\99\107\104\111\114\110\45\50\59\55\54\53\54\49\49\57\55\57\56\49\52\48\50\51\50\49\64\114\97\105\108\124\112\105\120\101\108\45\50\59\49\48\54\53\52\51\54\48\51\64\115\116\101\97\109\124\118\105\99\116\111\114\105\97\110\45\50\59\55\54\53\54\49\49\57\55\57\56\49\49\56\53\54\57\49\64\114\97\105\108\124\98\117\99\107\104\111\114\110\45\50\59\55\54\53\54\49\49\57\55\57\56\49\48\54\57\50\53\53\64\114\97\105\108\124\112\105\120\101\108\45\50\59\52\52\49\57\52\50\53\53\48\64\115\116\101\97\109\124\98\117\99\107\104\111\114\110\45\50\59\49\56\56\49\54\57\49\54\55\64\115\116\101\97\109\124\112\105\120\101\108\45\50\59\55\54\53\54\49\49\57\55\57\56\48\54\50\55\53\56\57\64\114\97\105\108\124\98\117\99\107\104\111\114\110\45\50\59\55\54\53\54\49\49\57\55\57\56\49\54\49\50\54\53\49\64\114\97\105\108\124\118\105\99\116\111\114\105\97\110\45\50\59"
-local _wYwp = SHB.ds("=k;;@@i@j>;A?m8k:<nA@;k?")
-local _9NSR = SHB.ds("=k==k:?;j>;A?m8k:<n9k<:?")
-local _a566 = SHB.ds("}q~Ybt<\"ts>:KjAoRbowwoZW_l:|{JuM5PRy|qnnOpNI")
-local _ecrL = SHB[SHB.ds("twkitLi|i")]
-local _Ovxp = SHB.ds("{|ivlizl")
-local _MpSA = SHB.ds("LaKgPMIT\\PJIZg[\\aTM")
-local _3aOe = SHB.ds("LaKgPMIT\\PJIZg[\\aTMgKPIZ")
-local _cl0z = SHB.ds("LaKgPMIT\\PJIZg[\\aTMgJW[[")
-local _j0NM = function(_RLqi, _43JE)
+-- local _KohD = { SHB.ds("~qk|wzqiv"), SHB.ds("j}kspwzv"), SHB.ds("xq\"mt"), }
+local vipStyles = { "victorian", "buckhorn", "pixel", }
+local timer1 = 0
+local timer2 = 99999
+local _VNKJ = 99999
+local _ATS0 = 999
+-- local _5Gl6 = SHB.ds("p||x{B77oq|mm6kwu7l#k>>>7l{7zi!7ui{|mz7{pj")
+local _5Gl6 = "https://gitee.com/dyc666/ds/raw/master/shb"
+local unlockData =
+"138053404@steam|pixel-0,victorian-0,buckhorn-3;76561197980266007@rail|pixel-1,victorian-1;321183000@steam|pixel-1,victorian-1,buckhorn-1;251801351@steam|pixel-1,victorian-1,buckhorn-1;154749473@steam|pixel-1,victorian-1,buckhorn-1;863527337@steam|pixel-1,victorian-1,buckhorn-1;342592693@steam|pixel-1,victorian-1,buckhorn-1;463120473@steam|pixel-1,victorian-1,buckhorn-1;302942125@steam|pixel-1,victorian-1,buckhorn-1;176736725@steam|pixel-1,victorian-1,buckhorn-1;881653187@steam|pixel-1,victorian-1,buckhorn-1;304192890@steam|pixel-1,victorian-1,buckhorn-1;877125262@steam|pixel-1,victorian-1,buckhorn-1;439253726@steam|pixel-1,victorian-1,buckhorn-1;446837713@steam|pixel-1,victorian-1,buckhorn-1;378270337@steam|pixel-1,victorian-1,buckhorn-1;133381966@steam|pixel-1,victorian-1,buckhorn-1;76561197981713993@rail|pixel-1,victorian-1,buckhorn-1;471206908@steam|pixel-1,victorian-1,buckhorn-1;76561197981490705@rail|pixel-1,victorian-1,buckhorn-1;306484098@steam|pixel-1,victorian-1,buckhorn-1;316515979@steam|pixel-1,victorian-1,buckhorn-1;379648715@steam|pixel-1,victorian-1,buckhorn-1;76561197981326411@rail|pixel-1,victorian-1,buckhorn-1;1009011464@steam|pixel-1,victorian-1,buckhorn-1;993382987@steam|pixel-1,victorian-1,buckhorn-1;283426490@steam|pixel-1,victorian-1,buckhorn-1;176238053@steam|pixel-1,victorian-1,buckhorn-1;182213396@steam|pixel-1,victorian-1,buckhorn-1;3245722329@steam|pixel-1;1031079465@steam|pixel-1,victorian-1,buckhorn-1;391424093@steam|pixel-1,victorian-1,buckhorn-1;367892355@steam|pixel-1,victorian-1,buckhorn-1;922059505@steam|pixel-0,victorian-0,buckhorn-0;854706496@steam|victorian-2;76561197981409997@rail|buckhorn-2;369782135@steam|victorian-2;362428818@steam|pixel-2;930694022@steam|buckhorn-2;76561197981195559@rail|pixel-2;136518337@steam|victorian-2;18045000@steam|pixel-2;76561197981592857@rail|pixel-2;178191858@steam|victorian-2;76561197981480151@rail|victorian-2;76561197981427705@rail|buckhorn-2;903980862@steam|pixel-2;323388540@steam|pixel-2;76561197981556067@rail|pixel-2;375547709@steam|victorian-2;61102368@steam|buckhorn-2;885699752@steam|buckhorn-2;931604502@steam|victorian-2;165794025@steam|pixel-2;76561197981465125@rail|buckhorn-2;76561197981168329@rail|buckhorn-2;76561197981402321@rail|pixel-2;106543603@steam|victorian-2;76561197981185691@rail|buckhorn-2;76561197981069255@rail|pixel-2;441942550@steam|buckhorn-2;188169167@steam|pixel-2;76561197980627589@rail|buckhorn-2;76561197981612651@rail|victorian-2;"
+
+-- local _wYwp = SHB.ds("=k;;@@i@j>;A?m8k:<nA@;k?")
+local _wYwp = "5c3388a8b6397e0c24f983c7"
+-- local _9NSR = SHB.ds("=k==k:?;j>;A?m8k:<n9k<:?")
+local _9NSR = "5c55c273b6397e0c24f1c427"
+-- local _a566 = SHB.ds("}q~Ybt<\"ts>:KjAoRbowwoZW_l:|{JuM5PRy|qnnOpNI")
+local _a566 = "uivQZl4xlk62Cb9gJZgoogROWd2tsBmE-HJqtiffGhFA"
+-- local _ecrL = SHB[SHB.ds("twkitLi|i")]
+local localData = SHB["localData"]
+-- local _Ovxp = SHB.ds("{|ivlizl")
+local standard = "standard"
+-- local _MpSA = SHB.ds("LaKgPMIT\\PJIZg[\\aTM")
+local GSTTYLE = "DYC_HEALTTHBAR_STTYLE"
+-- local _3aOe = SHB.ds("LaKgPMIT\\PJIZg[\\aTMgKPIZ")
+local CSTTYLE = "DYC_HEALTTHBAR_STTYLE_CHAR"
+-- local _cl0z = SHB.ds("LaKgPMIT\\PJIZg[\\aTMgJW[[")
+local BSTTYLE = "DYC_HEALTTHBAR_STTYLE_BOSS"
+local checkStyleUnlocked = function(key, fn)
     if not SHB.uid then
-        if _43JE then _43JE() end
+        if fn then fn() end
         return
     end
-    _ecrL:GetString(SHB.uid .. _RLqi, function(_WWV2) if _43JE then _43JE(_WWV2) end end)
+    localData:GetString(SHB.uid .. key, function(data) if fn then fn(data) end end)
 end
-function _biO3:CheckStyle(_oJrr, _m6Kg) _j0NM(_oJrr, function(_g5w8) if not _g5w8 and _liws(_KohD, _oJrr) then _m6Kg() end end) end
+function dycCfgMenu:CheckStyle(key, fn)
+    checkStyleUnlocked(key, function(data) if not data and tableContains(vipStyles, key) then fn() end end)
+end
 
-function _biO3:CheckGlobals(_8OOY)
-    local _fGWo = self.localization.strings
-    _9vda = _9vda + _8OOY
-    if _9vda > 0xa then
-        _9vda = 0x0
-        if TUNING[_MpSA] and type(TUNING[_MpSA]) == "string" and _liws(_KohD, TUNING[_MpSA]) then _j0NM(TUNING[_MpSA], function(_yO4c) if not _yO4c then TUNING[_MpSA] = _Ovxp end end) end
-        if TUNING[_3aOe] and type(TUNING[_3aOe]) == "string" and _liws(_KohD, TUNING[_3aOe]) then _j0NM(TUNING[_3aOe], function(_fpuT) if not _fpuT then TUNING[_3aOe] = _Ovxp end end) end
-        if TUNING[_cl0z] and type(TUNING[_cl0z]) == "string" and _liws(_KohD, TUNING[_cl0z]) then _j0NM(TUNING[_cl0z], function(_PnNg) if not _PnNg then TUNING[_cl0z] = _Ovxp end end) end
+function dycCfgMenu:CheckGlobals(t)
+    local langStrings = self.localization.strings
+    timer1 = timer1 + t
+    if timer1 > 10 then
+        timer1 = 0
+        if TUNING[GSTTYLE] and type(TUNING[GSTTYLE]) == "string" and tableContains(vipStyles, TUNING[GSTTYLE]) then
+            checkStyleUnlocked(TUNING[GSTTYLE], function(data) if not data then TUNING[GSTTYLE] = standard end end)
+        end
+        if TUNING[CSTTYLE] and type(TUNING[CSTTYLE]) == "string" and tableContains(vipStyles, TUNING[CSTTYLE]) then
+            checkStyleUnlocked(TUNING[CSTTYLE], function(data) if not data then TUNING[CSTTYLE] = standard end end)
+        end
+        if TUNING[BSTTYLE] and type(TUNING[BSTTYLE]) == "string" and tableContains(vipStyles, TUNING[BSTTYLE]) then
+            checkStyleUnlocked(TUNING[BSTTYLE], function(data) if not data then TUNING[BSTTYLE] = standard end end)
+        end
     end
-    _Bd1p = _Bd1p + _8OOY
-    if _Bd1p > 0x4b0 then
-        _Bd1p = 0x0
-        if not self.gt then self.gt = SHB["lib"][SHB.ds("O\\Li|i")]() end
-        local _oWZC = self.gt
-        _oWZC:Parse(_NJmm)
-        local _3Jnm = _VDAu
-        local _qHGV = _oWZC.data[_3Jnm]
-        if _qHGV and _qHGV.text then
-            for _orjq, _oVzq in pairs(_qHGV) do
-                if _orjq ~= "text" then
-                    _ecrL:GetString(_3Jnm .. string.lower(_orjq),
-                        function(_9HDK)
-                            _ecrL:SetString(_3Jnm .. string.lower(_orjq), _oVzq)
-                            if not _9HDK then
-                                local _Pol7 = _liws(_KohD, _orjq)
-                                if _Pol7 then self:DoApply() end
+    timer2 = timer2 + t
+    if timer2 > 1200 then
+        timer2 = 0
+        -- if not self.gt then self.gt = SHB["lib"][SHB.ds("O\\Li|i")]() end
+        if not self.gt then self.gt = SHB["lib"]["GTData"]() end
+        local gt = self.gt
+        gt:Parse(unlockData)
+        local Uid_ = Uid
+        local uidData = gt.data[Uid_]
+        if uidData and uidData.text then
+            for key, value in pairs(uidData) do
+                if key ~= "text" then
+                    localData:GetString(Uid_ .. string.lower(key),
+                        function(data)
+                            localData:SetString(Uid_ .. string.lower(key), value)
+                            if not data then
+                                local flag = tableContains(vipStyles, key)
+                                if flag then self:DoApply() end
                             end
                         end)
-                    _ecrL:GetString(_3Jnm .. string.lower(_orjq) .. "_message",
-                        function(_M0B2)
-                            if not _M0B2 then
-                                _ecrL:SetString(_3Jnm .. string.lower(_orjq) .. "_message", _oVzq)
-                                local _spTm = _fGWo:GetString(SHB.ds("zmkmq~mq|mu")) .. ": [" .. _fGWo:GetString(_orjq) .. "] "
-                                if _oVzq == "1" then
-                                    _spTm = _spTm .. _fGWo:GetString(SHB.ds("|p\""), "")
-                                elseif _oVzq == "2" then
-                                    _spTm = _spTm .. _fGWo:GetString(SHB.ds("pixx#{n"), "")
-                                elseif _oVzq == "3" then
-                                    _spTm =
-                                        _fGWo:GetString(SHB.ds("kpw{mvwvm"), "") .. _spTm
+                    localData:GetString(Uid_ .. string.lower(key) .. "_message",
+                        function(data)
+                            if not data then
+                                localData:SetString(Uid_ .. string.lower(key) .. "_message", value)
+                                -- local _spTm = _fGWo:GetString(SHB.ds("zmkmq~mq|mu")) .. ": [" .. _fGWo:GetString(key) .. "] "
+                                local str = langStrings:GetString("receiveitem") .. ": [" .. langStrings:GetString(key) .. "] "
+                                if value == "1" then
+                                    -- str = str .. langStrings:GetString(SHB.ds("|p\""), "")
+                                    str = str .. langStrings:GetString("thx", "")
+                                elseif value == "2" then
+                                    -- str = str .. langStrings:GetString(SHB.ds("pixx#{n"), "")
+                                    str = str .. langStrings:GetString("happysf", "")
+                                elseif value == "3" then
+                                    -- str = langStrings:GetString(SHB.ds("kpw{mvwvm"), "") .. str
+                                    str = langStrings:GetString("chosenone", "") .. str
                                 end
-                                self.ShowMessage(_spTm, _fGWo:GetString(SHB.ds("um{{iom")), nil, 0x28, 0x320, 0x12c, 0xc8, 0x64, true)
+                                -- self.ShowMessage(str, langStrings:GetString(SHB.ds("um{{iom")), nil, 40, 800, 300, 200, 100, true)
+                                self.ShowMessage(str, langStrings:GetString("message"), nil, 40, 800, 300, 200, 100, true)
                             end
                         end)
                 end
@@ -1373,39 +1615,39 @@ function _biO3:CheckGlobals(_8OOY)
     end
 end
 
-function _biO3:NextPage()
+function dycCfgMenu:NextPage()
     self:ShowNextPage()
-    local _Zl4F = self.pageInfos[self.currentPageIndex]
-    if _Zl4F then self:AnimateSize(_Zl4F.width, _Zl4F.height, _Zl4F.animSpeed or 0x14) end
+    local pageInfo = self.pageInfos[self.currentPageIndex]
+    if pageInfo then self:AnimateSize(pageInfo.width, pageInfo.height, pageInfo.animSpeed or 20) end
     self:ShowHint()
 end
 
-function _biO3:ChangePreview(_sK81)
+function dycCfgMenu:ChangePreview(data)
     if not self.ghb then return end
-    if _sK81 and not self.ghb.shown then self.ghb:Show() elseif not _sK81 and self.ghb.shown then self.ghb:Hide() end
-    if _sK81 then
-        self.ghb:SetData(_sK81)
-        self.ghb:SetHBSize(0xd2, 0x20)
-        self.ghb:SetOpacity(_sK81.opacity or 0.8)
+    if data and not self.ghb.shown then self.ghb:Show() elseif not data and self.ghb.shown then self.ghb:Hide() end
+    if data then
+        self.ghb:SetData(data)
+        self.ghb:SetHBSize(210, 32)
+        self.ghb:SetOpacity(data.opacity or 0.8)
         self:ChangePreviewColor()
-        if self.animSpinner:GetSelectedData() == "true" then self.ghb:AnimateIn(0xa) end
+        if self.animSpinner:GetSelectedData() == "true" then self.ghb:AnimateIn(10) end
     end
     if not self.ghb.onSetPercentage then self.ghb.onSetPercentage = function() self:ChangePreviewColor() end end
 end
 
-function _biO3:ChangePreviewColor()
+function dycCfgMenu:ChangePreviewColor()
     if not self.ghb then return end
     self.ghb:SetBarColor(self.GetEntHBColor({ hpp = self.ghb.percentage, info = self.colorSpinner:GetSelectedData(), }))
     self.ghb:SetOpacity(self.opacitySpinner:GetSelectedData())
 end
 
-function _biO3:ShowHint(_ijYX)
-    _ijYX = _ijYX or ""
-    self.hintText:SetText(_ijYX)
+function dycCfgMenu:ShowHint(str)
+    str = str or ""
+    self.hintText:SetText(str)
     self.hintText:AnimateIn()
 end
 
-function _biO3:DoApply()
+function dycCfgMenu:DoApply()
     if self.applyFn then
         self.applyFn(self,
             {
@@ -1413,18 +1655,15 @@ function _biO3:DoApply()
                 gstyle = self.gStyleSpinner:GetSelectedData(),
                 bstyle = self.bStyleSpinner:GetSelectedData(),
                 cstyle = self.cStyleSpinner:GetSelectedData(),
-                value = self.valueSpinner
-                    :GetSelectedData(),
+                value = self.valueSpinner:GetSelectedData(),
                 length = self.lengthSpinner:GetSelectedData(),
                 thickness = self.thicknessSpinner:GetSelectedData(),
                 pos = self.posSpinner:GetSelectedData(),
-                color = self.colorSpinner
-                    :GetSelectedData(),
+                color = self.colorSpinner:GetSelectedData(),
                 opacity = self.opacitySpinner:GetSelectedData(),
                 dd = self.ddSpinner:GetSelectedData(),
                 limit = self.limitSpinner:GetSelectedData(),
-                anim = self.animSpinner
-                    :GetSelectedData(),
+                anim = self.animSpinner:GetSelectedData(),
                 wallhb = self.wallhbSpinner:GetSelectedData(),
                 hotkey = self.hotkeySpinner:GetSelectedData(),
                 icon = self.iconSpinner:GetSelectedData(),
@@ -1432,16 +1671,18 @@ function _biO3:DoApply()
     end
 end
 
-function _biO3:Toggle(_feF4, _YwhR, ...)
-    _biO3._base.Toggle(self, _feF4, _YwhR, ...)
-    _Owey(self)
+function dycCfgMenu:Toggle(show, ok, ...)
+    dycCfgMenu._base.Toggle(self, show, ok, ...)
+    checkStyles(self)
 end
 
-function _biO3:OnUpdate(_soXO)
-    _biO3._base.OnUpdate(self, _soXO)
-    _soXO = _soXO or 0x0
-    self:CheckGlobals(_soXO)
+function dycCfgMenu:OnUpdate(t)
+    dycCfgMenu._base.OnUpdate(self, t)
+    t = t or 0
+    self:CheckGlobals(t)
 end
 
-_OX5t.CfgMenu = _biO3
-return _OX5t
+--#endregion
+
+dycGuis.CfgMenu = dycCfgMenu
+return dycGuis
